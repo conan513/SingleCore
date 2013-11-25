@@ -48,7 +48,7 @@
 #include "CellImpl.h"
 #include "Transports.h"
 #include "VMapFactory.h"
-#include "MovementGenerator.h"
+#include "movementGenerators/MovementGenerator.h"
 #include "movement/MoveSplineInit.h"
 #include "movement/MoveSpline.h"
 #include "CreatureLinkingMgr.h"
@@ -408,10 +408,12 @@ void Unit::Update(uint32 update_diff, uint32 p_time)
 
     // update abilities available only for fraction of time
     UpdateReactives(update_diff);
-
-    ModifyAuraState(AURA_STATE_HEALTHLESS_20_PERCENT, GetHealth() < GetMaxHealth() * 0.20f);
-    ModifyAuraState(AURA_STATE_HEALTHLESS_35_PERCENT, GetHealth() < GetMaxHealth() * 0.35f);
-    ModifyAuraState(AURA_STATE_HEALTH_ABOVE_75_PERCENT, GetHealth() > GetMaxHealth() * 0.75f);
+    if (isAlive())
+    {
+        ModifyAuraState(AURA_STATE_HEALTHLESS_20_PERCENT, GetHealth() < GetMaxHealth() * 0.20f);
+        ModifyAuraState(AURA_STATE_HEALTHLESS_35_PERCENT, GetHealth() < GetMaxHealth() * 0.35f);
+        ModifyAuraState(AURA_STATE_HEALTH_ABOVE_75_PERCENT, GetHealth() > GetMaxHealth() * 0.75f);
+    }
     UpdateSplineMovement(p_time);
     GetUnitStateMgr().Update(p_time);
 }
@@ -6313,7 +6315,7 @@ Aura* Unit::GetAura(uint32 spellId, SpellEffectIndex effindex)
 
 Aura* Unit::GetAura(AuraType type, SpellFamily family, ClassFamilyMask const& classMask, ObjectGuid casterGuid)
 {
-    MAPLOCK_READ(this,MAP_LOCK_TYPE_AURAS);
+    MAPLOCK_TRYREAD(this,MAP_LOCK_TYPE_AURAS);
     AuraList& auras = GetAurasByType(type);
     for(AuraList::iterator i = auras.begin(); i != auras.end(); ++i)
     {
@@ -7254,7 +7256,7 @@ bool Unit::Attack(Unit *victim, bool meleeAttack)
         if (VehicleKitPtr vehicle = GetVehicle())
         {
             if (VehicleSeatEntry const* seatInfo = vehicle->GetSeatInfo(this))
-                if (!seatInfo->m_flags & (SEAT_FLAG_CAN_CAST | SEAT_FLAG_CAN_ATTACK))
+                if (!(seatInfo->m_flags & (SEAT_FLAG_CAN_CAST | SEAT_FLAG_CAN_ATTACK)))
                     return false;
         }
     }
@@ -8589,7 +8591,7 @@ int32 Unit::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask)
             if((*i)->GetModifier()->m_miscvalue & schoolMask)
             {
                 // stat used stored in miscValueB for this aura
-                Stats usedStat = Stats((*i)->GetMiscBValue());
+                Stats usedStat = Stats((*i)->GetMiscValueB());
                 DoneAdvertisedBenefit += int32(GetStat(usedStat) * (*i)->GetModifier()->m_amount / 100.0f);
             }
         }
@@ -9314,8 +9316,9 @@ void Unit::MeleeDamageBonusDone(DamageInfo* damageInfo, uint32 stack)
     if (damageInfo->damage == 0 || ( damageInfo->GetSpellProto() && damageInfo->GetSpellProto()->HasAttribute(SPELL_ATTR_EX6_NO_DMG_MODS)))
         return;
 
-    MAPLOCK_READ(this,MAP_LOCK_TYPE_AURAS);
-    MAPLOCK_READ1(pVictim,MAP_LOCK_TYPE_AURAS);
+    MAPLOCK_READ(this, MAP_LOCK_TYPE_AURAS);
+    if (GetMap() != pVictim->GetMap())
+        MAPLOCK_READ1(pVictim, MAP_LOCK_TYPE_AURAS);
 
     // differentiate for weapon damage based spells
     bool isWeaponDamageBasedSpell = !(damageInfo->GetSpellProto() && (damageInfo->damageType == DOT || IsSpellHaveEffect(damageInfo->GetSpellProto(), SPELL_EFFECT_SCHOOL_DAMAGE)));
