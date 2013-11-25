@@ -1829,6 +1829,7 @@ void World::Update(uint32 diff)
 
     // playerbot mod
     sRandomPlayerbotMgr.UpdateAI(diff);
+    sRandomPlayerbotMgr.UpdateSessions();
     // end of playerbot mod
 
     /// <li> Handle session updates

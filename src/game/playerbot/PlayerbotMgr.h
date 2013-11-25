@@ -25,6 +25,7 @@ public:
     PlayerBotMap::const_iterator GetPlayerBotsEnd()   const { return playerBots.end();   }
 
     virtual void UpdateAIInternal(uint32 elapsed);
+    void UpdateSessions();
 
     void LogoutAllBots();
     void OnBotLogin(Player * const bot);

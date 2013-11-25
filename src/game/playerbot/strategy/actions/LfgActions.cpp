@@ -5,6 +5,7 @@
 #include "../../PlayerbotAIConfig.h"
 #include "../ItemVisitors.h"
 #include "../../RandomPlayerbotMgr.h"
+#include "../../../LFGMgr.h"
 
 using namespace ai;
 
@@ -34,7 +35,7 @@ bool LfgJoinAction::Execute(Event event)
 
 bool LfgJoinAction::SetRoles()
 {
-    LFGPlayerState* state = bot->GetLFGPlayerState();
+    LFGPlayerState* state = sLFGMgr.GetLFGPlayerState(bot->GetObjectGuid());
     if (!state)
         return false;
 
@@ -85,7 +86,7 @@ bool LfgJoinAction::SetRoles()
 
 bool LfgJoinAction::JoinProposal()
 {
-    LFGPlayerState* state = bot->GetLFGPlayerState();
+    LFGPlayerState* state = sLFGMgr.GetLFGPlayerState(bot->GetObjectGuid());
     if (!state)
         return false;
 
@@ -130,22 +131,22 @@ bool LfgJoinAction::JoinProposal()
 
     if (random)
 	{
-		sLog.outDetail("Bot %s joined to LFG_TYPE_RANDOM_DUNGEON", bot->GetName());
+		sLog.outDebug("Bot %s joined to LFG_TYPE_RANDOM_DUNGEON", bot->GetName());
         state->SetType(LFG_TYPE_RANDOM_DUNGEON);
 	}
     else if (heroic)
 	{
-		sLog.outDetail("Bot %s joined to LFG_TYPE_HEROIC_DUNGEON", bot->GetName());
+		sLog.outDebug("Bot %s joined to LFG_TYPE_HEROIC_DUNGEON", bot->GetName());
         state->SetType(LFG_TYPE_HEROIC_DUNGEON);
 	}
     else if (raid)
 	{
-		sLog.outDetail("Bot %s joined to LFG_TYPE_RAID", bot->GetName());
+		sLog.outDebug("Bot %s joined to LFG_TYPE_RAID", bot->GetName());
         state->SetType(LFG_TYPE_RAID);
 	}
     else
 	{
-		sLog.outDetail("Bot %s joined to LFG_TYPE_DUNGEON", bot->GetName());
+		sLog.outDebug("Bot %s joined to LFG_TYPE_DUNGEON", bot->GetName());
         state->SetType(LFG_TYPE_DUNGEON);
 	}
 
@@ -176,7 +177,7 @@ bool LfgRoleCheckAction::Execute(Event event)
 
 bool LfgAcceptAction::Execute(Event event)
 {
-    LFGPlayerState* botState = bot->GetLFGPlayerState();
+    LFGPlayerState* botState = sLFGMgr.GetLFGPlayerState(bot->GetObjectGuid());
     if (!botState || botState->GetState() != LFG_STATE_PROPOSAL)
         return false;
 

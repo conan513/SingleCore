@@ -884,6 +884,11 @@ class MANGOS_DLL_SPEC WorldSession
         void SendLfgUpdateList(uint32 dungeonID);
         void SendLfgDisabled();
 
+        // playerbot mod
+        void HandleBotPackets();
+        // end of playerbot mod
+
+
     private:
         // private trade methods
         void moveItems(Item* myItems[], Item* hisItems[]);

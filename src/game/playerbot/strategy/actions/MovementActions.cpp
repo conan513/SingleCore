@@ -3,7 +3,7 @@
 #include "../values/LastMovementValue.h"
 #include "MovementActions.h"
 #include "../../../MotionMaster.h"
-#include "../../../MovementGenerator.h"
+#include "../../../movementGenerators/MovementGenerator.h"
 #include "../../FleeManager.h"
 #include "../../LootObjectStack.h"
 #include "../../PlayerbotAIConfig.h"
@@ -221,7 +221,10 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
         ai->InterruptSpell();
     }
 
-    mm.MoveFollow(target, distance, angle);
+    if (mm.GetCurrentMovementGeneratorType() != FOLLOW_MOTION_TYPE)
+    {
+        mm.MoveFollow(target, distance, angle);
+    }
 
     AI_VALUE(LastMovement&, "last movement").Set(target);
     return true;
