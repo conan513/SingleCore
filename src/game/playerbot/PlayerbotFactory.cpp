@@ -100,7 +100,7 @@ void PlayerbotFactory::InitPet()
         if (bot->getClass() != CLASS_HUNTER)
             return;
 
-        Map* map = bot->GetMap();
+        MapPtr map = bot->GetMapPtr();
         if (!map)
             return;
 
@@ -137,7 +137,7 @@ void PlayerbotFactory::InitPet()
                 continue;
 
             uint32 guid = map->GenerateLocalLowGuid(HIGHGUID_PET);
-            CreatureCreatePos pos(map, bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetOrientation(), bot->GetPhaseMask());
+			CreatureCreatePos pos(map.get(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetOrientation(), bot->GetPhaseMask());
             pet = new Pet(HUNTER_PET);
             if (!pet->Create(guid, pos, co, 0, bot))
             {
@@ -157,6 +157,7 @@ void PlayerbotFactory::InitPet()
             pet->SavePetToDB(PET_SAVE_AS_CURRENT);
             break;
         }
+		map = MapPtr();
     }
 
     if (!pet)

@@ -15,7 +15,9 @@ bool TellReputationAction::Execute(Event event)
     if (selection.IsEmpty())
         return false;
 
-    Unit* unit = master->GetMap()->GetUnit(selection);
+    MapPtr map = bot->GetMapPtr();
+    Unit* unit = map->GetUnit(selection);
+    map = MapPtr();
     if (!unit)
         return false;
 

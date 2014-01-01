@@ -23,12 +23,14 @@ bool LfgJoinAction::Execute(Event event)
     if (sLFGMgr.GetQueueInfo(bot->GetObjectGuid()))
         return false;
 
-    if (bot->IsBeingTeleported())
+    if (bot->IsBeingTeleported() || bot->IsBeingTeleportedDelayEvent())
         return false;
 
-    Map* map = bot->GetMap();
+    MapPtr map = bot->GetMapPtr();
     if (map && map->Instanceable())
         return false;
+
+    map = MapPtr();
 
     return JoinProposal();
 }
@@ -196,6 +198,7 @@ bool LfgAcceptAction::Execute(Event event)
         {
             sRandomPlayerbotMgr.Refresh(bot);
             ai->ResetStrategies();
+            bot->GetMotionMaster()->Clear();
             bot->TeleportToHomebind();
         }
         return true;
