@@ -1364,7 +1364,6 @@ void LFGMgr::UpdateProposal(uint32 ID, ObjectGuid guid, bool accept)
         pGroup = new Group(GROUPTYPE_LFD);
         pGroup->Create(leader->GetObjectGuid(), leader->GetName());
         pGroup->ConvertToLFG(pProposal->GetType());
-        sObjectMgr.AddGroup(pGroup);
 
         // LFG settings
         GetLFGGroupState(pGroup->GetObjectGuid())->SetProposal(pProposal);
