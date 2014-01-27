@@ -2,7 +2,7 @@
 #include "../../playerbot.h"
 #include "StayActions.h"
 #include "../values/LastMovementValue.h"
-#include "../../../MovementGenerator.h"
+#include "../../../movementGenerators/MovementGenerator.h"
 
 using namespace ai;
 

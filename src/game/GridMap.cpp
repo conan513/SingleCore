@@ -668,40 +668,30 @@ TerrainInfo::TerrainInfo(uint32 mapid) : m_mapId(mapid)
     {
         for (int i = 0; i < MAX_NUMBER_OF_GRIDS; ++i)
         {
-            m_GridMaps[i][k] = NULL;
-            m_GridRef[i][k] = 0;
+            m_GridMaps[i][k] = GridMapPtr();
         }
     }
-
-    // clean up GridMap objects every minute
-    uint32 const iCleanUpInterval = 60;
-    // schedule start randlomly
-    uint32 const iRandomStart = urand(20, 40);
-
-    i_timer.SetInterval(iCleanUpInterval * 1000);
-    i_timer.SetCurrent(iRandomStart * 1000);
 }
 
 TerrainInfo::~TerrainInfo()
 {
+    /*
     for (int k = 0; k < MAX_NUMBER_OF_GRIDS; ++k)
         for (int i = 0; i < MAX_NUMBER_OF_GRIDS; ++i)
-            delete m_GridMaps[i][k];
+            m_GridMaps[i][k] = GridMapPtr();
+    */
 
     VMAP::VMapFactory::createOrGetVMapManager()->unloadMap(m_mapId);
     MMAP::MMapFactory::createOrGetMMapManager()->unloadMap(m_mapId);
 }
 
-GridMap* TerrainInfo::Load(uint32 const& x, uint32 const& y)
+GridMapPtr TerrainInfo::Load(uint32 const& x, uint32 const& y)
 {
     MANGOS_ASSERT(x < MAX_NUMBER_OF_GRIDS);
     MANGOS_ASSERT(y < MAX_NUMBER_OF_GRIDS);
 
-    // reference grid as a first step
-    RefGrid(x, y);
-
     // quick check if GridMap already loaded
-    GridMap* pMap = GetGridMap(x, y);
+    GridMapPtr pMap = GetGridMap(x, y);
     if (!pMap)
         pMap = LoadMapAndVMap(x, y);
 
@@ -713,74 +703,35 @@ void TerrainInfo::Unload(uint32 const& x, uint32 const& y)
 {
     MANGOS_ASSERT(x < MAX_NUMBER_OF_GRIDS);
     MANGOS_ASSERT(y < MAX_NUMBER_OF_GRIDS);
-
-    if (GetGridMap(x, y))
-    {
-        // decrease grid reference count...
-        if (UnrefGrid(x, y) == 0)
-        {
-            // TODO: add your additional logic here
-
-        }
-    }
+    // Currently method has no sence - grids cleaned up automatically.
 }
 
 // call this method only
 void TerrainInfo::CleanUpGrids(uint32 const diff)
 {
-    i_timer.Update(diff);
-    if (!i_timer.Passed())
-        return;
-
     for (int y = 0; y < MAX_NUMBER_OF_GRIDS; ++y)
     {
         for (int x = 0; x < MAX_NUMBER_OF_GRIDS; ++x)
         {
-            const int16& iRef = m_GridRef[x][y];
-            GridMap* pMap = GetGridMap(x,y);
-
-            // delete those GridMap objects which have refcount = 0
-            if (pMap && iRef == 0)
+            // delete those GridMap objects which have refcount == 0
+            if (m_GridMaps[x][y] && m_GridMaps[x][y].count() == 0)
             {
+                DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING,"TerrainInfo::CleanUpGrids unload grid map:%u x:%d y:%d", GetMapId(), x, y);
                 WriteGuard Guard(GetLock(), true);
-                m_GridMaps[x][y] = NULL;
-                // delete grid data if reference count == 0
-                pMap->unloadData();
-                delete pMap;
+
+                GridMapPtr tmpPtr = m_GridMaps[x][y];
+                m_GridMaps[x][y] = GridMapPtr();
 
                 // unload VMAPS...
                 VMAP::VMapFactory::createOrGetVMapManager()->unloadMap(m_mapId, x, y);
 
                 // unload mmap...
                 MMAP::MMapFactory::createOrGetMMapManager()->unloadMap(m_mapId, x, y);
+
+                // tmpPtr be auto-erased after cycle end
             }
         }
     }
-
-    i_timer.Reset();
-}
-
-int TerrainInfo::RefGrid(uint32 const& x, uint32 const& y)
-{
-    MANGOS_ASSERT(x < MAX_NUMBER_OF_GRIDS);
-    MANGOS_ASSERT(y < MAX_NUMBER_OF_GRIDS);
-
-    WriteGuard Guard(GetLock(), true);
-    return (m_GridRef[x][y] += 1);
-}
-
-int TerrainInfo::UnrefGrid(uint32 const& x, uint32 const& y)
-{
-    MANGOS_ASSERT(x < MAX_NUMBER_OF_GRIDS);
-    MANGOS_ASSERT(y < MAX_NUMBER_OF_GRIDS);
-
-    int16& iRef = m_GridRef[x][y];
-
-    WriteGuard Guard(GetLock(), true);
-    if (iRef > 0)
-        return (iRef -= 1);
-
-    return 0;
 }
 
 float TerrainInfo::GetHeightStatic(float x, float y, float z, bool useVmaps/*=true*/, float maxSearchDist/*=DEFAULT_HEIGHT_SEARCH*/) const
@@ -791,7 +742,7 @@ float TerrainInfo::GetHeightStatic(float x, float y, float z, bool useVmaps/*=tr
     float z2 = z + 2.f;
 
     // find raw .map surface under Z coordinates (or well-defined above)
-    if (GridMap* gmap = const_cast<TerrainInfo*>(this)->GetGrid(x, y))
+    if (GridMapPtr gmap = const_cast<TerrainInfo*>(this)->GetGrid(x, y))
         mapHeight = gmap->getHeight(x, y);
 
     if (useVmaps)
@@ -893,7 +844,7 @@ bool TerrainInfo::GetAreaInfo(float x, float y, float z, uint32& flags, int32& a
     if (vmgr->getAreaInfo(GetMapId(), x, y, vmap_z, flags, adtId, rootId, groupId))
     {
         // check if there's terrain between player height and object height
-        if (GridMap* gmap = const_cast<TerrainInfo*>(this)->GetGrid(x, y))
+        if (GridMapPtr gmap = const_cast<TerrainInfo*>(this)->GetGrid(x, y))
         {
             float _mapheight = gmap->getHeight(x, y);
             // z + 2.0f condition taken from GetHeightStatic(), not sure if it's such a great choice...
@@ -926,7 +877,7 @@ uint16 TerrainInfo::GetAreaFlag(float x, float y, float z, bool* isOutdoors) con
         areaflag = atEntry->exploreFlag;
     else
     {
-        if (GridMap* gmap = const_cast<TerrainInfo*>(this)->GetGrid(x, y))
+        if (GridMapPtr gmap = const_cast<TerrainInfo*>(this)->GetGrid(x, y))
             areaflag = gmap->getArea(x, y);
         // this used while not all *.map files generated (instances)
         else
@@ -945,7 +896,7 @@ uint16 TerrainInfo::GetAreaFlag(float x, float y, float z, bool* isOutdoors) con
 
 uint8 TerrainInfo::GetTerrainType(float x, float y) const
 {
-    if (GridMap* gmap = const_cast<TerrainInfo*>(this)->GetGrid(x, y))
+    if (GridMapPtr gmap = const_cast<TerrainInfo*>(this)->GetGrid(x, y))
         return gmap->getTerrainType(x, y);
     else
         return 0;
@@ -1043,7 +994,7 @@ GridMapLiquidStatus TerrainInfo::getLiquidStatus(float x, float y, float z, uint
             result = LIQUID_MAP_ABOVE_WATER;
         }
     }
-    else if (GridMap* gmap = const_cast<TerrainInfo*>(this)->GetGrid(x, y))
+    else if (GridMapPtr gmap = const_cast<TerrainInfo*>(this)->GetGrid(x, y))
     {
         GridMapLiquidData map_data;
         GridMapLiquidStatus map_result = gmap->getLiquidStatus(x, y, z, ReqLiquidType, &map_data);
@@ -1155,7 +1106,7 @@ float TerrainInfo::GetWaterOrGroundLevel(float x, float y, float z, float* pGrou
     return VMAP_INVALID_HEIGHT_VALUE;
 }
 
-GridMap* TerrainInfo::GetGrid(float const& x, float const& y)
+GridMapPtr TerrainInfo::GetGrid(float const& x, float const& y)
 {
     // half opt method
     int gx = (int)(32 - x / SIZE_OF_GRIDS);                 // grid x
@@ -1163,17 +1114,17 @@ GridMap* TerrainInfo::GetGrid(float const& x, float const& y)
 
     if (gx >= MAX_NUMBER_OF_GRIDS || gy >= MAX_NUMBER_OF_GRIDS ||
         gx < 0 || gy < 0)
-        return NULL;
+        return GridMapPtr();
 
     // quick check if GridMap already loaded
-    GridMap* pMap = GetGridMap(gx,gy);
+    GridMapPtr pMap = GetGridMap(gx,gy);
     if (!pMap)
         pMap = LoadMapAndVMap(gx, gy);
 
     return pMap;
 }
 
-GridMap* TerrainInfo::LoadMapAndVMap(uint32 const& x, uint32 const& y)
+GridMapPtr TerrainInfo::LoadMapAndVMap(uint32 const& x, uint32 const& y)
 {
     // double checked lock pattern
     if (!GetGridMap(x, y))
@@ -1181,7 +1132,7 @@ GridMap* TerrainInfo::LoadMapAndVMap(uint32 const& x, uint32 const& y)
         WriteGuard Guard(GetLock(), true);
         if (!m_GridMaps[x][y])
         {
-            GridMap* map = new GridMap();
+            GridMapPtr map = GridMapPtr(new GridMap());
 
             // map file name
             int len = sWorld.GetDataPath().length() + strlen("maps/%03u%02u%02u.map") + 1;
@@ -1192,7 +1143,7 @@ GridMap* TerrainInfo::LoadMapAndVMap(uint32 const& x, uint32 const& y)
             if (!map->loadData(tmp))
             {
                 sLog.outError("Error load map file: \n %s\n", tmp);
-                // ASSERT(false);
+                return GridMapPtr();
             }
 
             delete[] tmp;
@@ -1249,10 +1200,10 @@ bool TerrainInfo::IsNextZcoordOK(float x, float y, float oldZ, float maxDiff) co
     return ((fabs(GetHeightStatic(x, y, oldZ, true) - oldZ) < maxDiff ) || (fabs(GetHeightStatic(x, y, oldZ, false) - oldZ) < maxDiff ));
 }
 
-GridMap* TerrainInfo::GetGridMap(uint32 const& x, uint32 const& y)
+GridMapPtr TerrainInfo::GetGridMap(uint32 const& x, uint32 const& y)
 {
     if (x >= MAX_NUMBER_OF_GRIDS || y >= MAX_NUMBER_OF_GRIDS)
-        return NULL;
+        return GridMapPtr();
 
     ReadGuard Guard(GetLock(), true);
     return m_GridMaps[x][y];

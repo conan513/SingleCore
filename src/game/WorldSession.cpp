@@ -325,7 +325,7 @@ bool WorldSession::Update(PacketFilter& updater)
 
 	// playerbot mod
     if (GetPlayer() && GetPlayer()->GetPlayerbotMgr())
-        GetPlayer()->GetPlayerbotMgr()->UpdateSessions(0);
+        GetPlayer()->GetPlayerbotMgr()->UpdateSessions();
     // end of playerbot mod
 
     if (m_Socket && !m_Socket->IsClosed() && m_Warden && GetPlayer() && !GetPlayer()->GetPlayerbotAI())

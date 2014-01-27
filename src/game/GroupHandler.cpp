@@ -175,7 +175,6 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recv_data)
             delete group;
             return;
         }
-        sObjectMgr.AddGroup(group);
         DEBUG_LOG("WorldSession::HandleGroupInviteOpcode %s send invite to %s, try create %s.",GetPlayer()->GetObjectGuid().GetString().c_str(), player->GetObjectGuid().GetString().c_str(),group->GetObjectGuid().GetString().c_str());
     }
     else
@@ -229,10 +228,7 @@ void WorldSession::HandleGroupAcceptOpcode(WorldPacket& recv_data)
         if (leader)
             group->RemoveInvite(leader);
 
-        if (group->Create(group->GetLeaderGuid(), group->GetLeaderName()))
-            // Double add. not a problem
-            sObjectMgr.AddGroup(group);
-        else
+        if (!group->Create(group->GetLeaderGuid(), group->GetLeaderName()))
             return;
 
         DEBUG_LOG("WorldSession::HandleGroupAcceptOpcode %s accept group invite, %s created.",GetPlayer()->GetObjectGuid().GetString().c_str(), group->GetObjectGuid().GetString().c_str());
@@ -396,7 +392,7 @@ void WorldSession::HandleGroupSetLeaderOpcode(WorldPacket& recv_data)
     /********************/
 
     // everything is fine, do it
-    GetPlayer()->GetLFGPlayerState()->RemoveRole(ROLE_LEADER);
+    sLFGMgr.GetLFGPlayerState(GetPlayer()->GetObjectGuid())->RemoveRole(ROLE_LEADER);
     group->ChangeLeader(guid);
 }
 

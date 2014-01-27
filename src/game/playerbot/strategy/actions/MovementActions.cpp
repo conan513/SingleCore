@@ -3,7 +3,7 @@
 #include "../values/LastMovementValue.h"
 #include "MovementActions.h"
 #include "../../../MotionMaster.h"
-#include "../../../MovementGenerator.h"
+#include "../../../movementGenerators/MovementGenerator.h"
 #include "../../FleeManager.h"
 #include "../../LootObjectStack.h"
 #include "../../PlayerbotAIConfig.h"
@@ -164,7 +164,8 @@ bool MovementAction::IsMovingAllowed()
 {
     if (bot->isFrozen() || bot->IsPolymorphed() ||
             (bot->isDead() && !bot->GetCorpse()) ||
-            bot->IsBeingTeleported() || bot->isInRoots() ||
+            bot->IsBeingTeleported() || bot->IsBeingTeleportedDelayEvent() ||
+            bot->isInRoots() ||
             bot->HasAuraType(SPELL_AURA_MOD_CONFUSE) || bot->isCharmed() ||
             bot->HasAuraType(SPELL_AURA_MOD_STUN) || bot->IsTaxiFlying())
         return false;
@@ -221,7 +222,10 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
         ai->InterruptSpell();
     }
 
-    mm.MoveFollow(target, distance, angle);
+    if (mm.GetCurrentMovementGeneratorType() != FOLLOW_MOTION_TYPE)
+    {
+        mm.MoveFollow(target, distance, angle);
+    }
 
     AI_VALUE(LastMovement&, "last movement").Set(target);
     return true;
@@ -312,14 +316,19 @@ bool MoveRandomAction::Execute(Event event)
 
     float distance = sPlayerbotAIConfig.tooCloseDistance + sPlayerbotAIConfig.grindDistance * urand(3, 10) / 10.0f;
 
-    const TerrainInfoPtr terrain = bot->GetMap()->GetTerrain();
+    MapPtr map = bot->GetMapPtr();
+    const TerrainInfoPtr terrain = map->GetTerrain();
     if (target)
     {
         float x = target->GetPositionX();
         float y = target->GetPositionY();
         float z = target->GetPositionZ();
         if (!terrain->IsInWater(x, y, z) && !terrain->IsUnderWater(x, y, z))
-            return MoveNear(target);
+        {
+            bool moved = MoveNear(target);
+            map = MapPtr();
+            return moved;
+        }
     }
 
     for (int i = 0; i < 10; ++i)
@@ -335,10 +344,12 @@ bool MoveRandomAction::Execute(Event event)
             continue;
 
         bool moved = MoveNear(bot->GetMapId(), x, y, z);
+        map = MapPtr();
         if (moved)
             return true;
     }
 
+    map = MapPtr();
     return false;
 }
 

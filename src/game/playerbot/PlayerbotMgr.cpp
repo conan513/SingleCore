@@ -26,18 +26,16 @@ void PlayerbotHolder::UpdateAIInternal(uint32 elapsed)
 {
 }
 
-void PlayerbotHolder::UpdateSessions(uint32 elapsed)
+void PlayerbotHolder::UpdateSessions()
 {
     for (PlayerBotMap::const_iterator itr = GetPlayerBotsBegin(); itr != GetPlayerBotsEnd(); ++itr)
     {
-        Player* const bot = itr->second;
-        if (bot->IsBeingTeleported())
+        Player* const botPlayer = itr->second;
+        if (botPlayer->IsBeingTeleported())
+            botPlayer->GetPlayerbotAI()->HandleTeleportAck();
+        else if (botPlayer->IsInWorld())
         {
-            bot->GetPlayerbotAI()->HandleTeleportAck();
-        }
-        else if (bot->IsInWorld())
-        {
-            bot->GetSession()->HandleBotPackets();
+            botPlayer->GetSession()->HandleBotPackets();
         }
     }
 }
@@ -59,7 +57,7 @@ void PlayerbotHolder::LogoutPlayerBot(uint64 guid)
     if (bot)
     {
         bot->GetPlayerbotAI()->TellMaster("Goodbye!");
-        bot->SaveToDB();
+        //bot->SaveToDB();
 
         WorldSession * botWorldSessionPtr = bot->GetSession();
         playerBots.erase(guid);    // deletes bot player ptr inside this WorldSession PlayerBotMap

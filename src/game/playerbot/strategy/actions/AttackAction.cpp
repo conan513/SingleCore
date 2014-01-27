@@ -1,7 +1,7 @@
 #include "../../../pchdef.h"
 #include "../../playerbot.h"
 #include "AttackAction.h"
-#include "../../../MovementGenerator.h"
+#include "../../../movementGenerators/MovementGenerator.h"
 #include "../../../CreatureAI.h"
 #include "../../LootObjectStack.h"
 

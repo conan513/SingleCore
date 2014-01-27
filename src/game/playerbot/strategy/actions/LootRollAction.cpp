@@ -23,7 +23,7 @@ bool LootRollAction::Execute(Event event)
         return false;
 
     RollVote vote = ROLL_PASS;
-    for (vector<Roll*>::iterator i = group->GetRolls().begin(); i != group->GetRolls().end(); ++i)
+    for (vector<Roll*>::iterator i = group->GetRolls()->begin(); i != group->GetRolls()->end(); ++i)
     {
         if ((*i)->isValid() && (*i)->lootedTargetGUID == guid && (*i)->itemSlot == slot)
         {

@@ -46,7 +46,7 @@ void AttackersValue::AddAttackersOf(Group* group, set<Unit*>& targets)
 
 void AttackersValue::AddAttackersOf(Player* player, set<Unit*>& targets)
 {
-    if (player->IsBeingTeleported())
+    if (player->IsBeingTeleported() || player->IsBeingTeleportedDelayEvent())
         return;
 
 	list<Unit*> units;

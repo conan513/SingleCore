@@ -111,6 +111,7 @@ bool SummonAction::Teleport()
             float z = master->GetPositionZ();
             if (master->IsWithinLOS(x, y, z))
             {
+                bot->GetMotionMaster()->Clear();
                 bot->TeleportTo(mapId, x, y, z, 0);
                 return true;
             }
