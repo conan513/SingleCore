@@ -33,8 +33,8 @@
 #include "MapManager.h"
 #include "Log.h"
 #include "Transports.h"
-#include "TargetedMovementGenerator.h"
-#include "WaypointMovementGenerator.h"
+#include "movementGenerators/TargetedMovementGenerator.h"
+#include "movementGenerators/WaypointMovementGenerator.h"
 #include "VMapFactory.h"
 #include "CellImpl.h"
 #include "GridNotifiers.h"
@@ -48,6 +48,7 @@
 #include "UpdateFieldFlags.h"
 #include "Group.h"
 #include "CreatureLinkingMgr.h"
+#include "Chat.h"
 
 #define TERRAIN_LOS_STEP_DISTANCE   3.0f        // sample distance for terrain LoS
 
@@ -474,7 +475,10 @@ void Object::BuildMovementUpdate(ByteBuffer * data, uint16 updateFlags) const
     if (updateFlags & UPDATEFLAG_VEHICLE)
     {
         *data << uint32(((Unit*)this)->GetVehicleInfo()->m_ID); // vehicle id
-        *data << float(((WorldObject*)this)->GetOrientation());
+        if (((WorldObject*)this)->IsOnTransport())
+            *data << float(((WorldObject*)this)->GetTransOffsetO());
+        else
+            *data << float(((WorldObject*)this)->GetOrientation());
     }
 
     // 0x200
@@ -1551,23 +1555,25 @@ bool WorldObject::IsPositionValid() const
 
 void WorldObject::MonsterSay(const char* text, uint32 language, Unit const* target) const
 {
-    WorldPacket data(SMSG_MESSAGECHAT, 200);
-    BuildMonsterChat(&data, GetObjectGuid(), CHAT_MSG_MONSTER_SAY, text, language, GetName(), target ? target->GetObjectGuid() : ObjectGuid(), target ? target->GetName() : "");
-    SendMessageToSetInRange(&data,sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_SAY),true);
+    WorldPacket data;
+    ChatHandler::BuildChatPacket(data, CHAT_MSG_MONSTER_SAY, text, LANG_UNIVERSAL, CHAT_TAG_NONE, GetObjectGuid(), GetName(),
+        target ? target->GetObjectGuid() : ObjectGuid(),target ? target->GetName() : "");
+    SendMessageToSetInRange(&data, sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_SAY), true);
 }
 
 void WorldObject::MonsterYell(const char* text, uint32 language, Unit const* target) const
 {
-    WorldPacket data(SMSG_MESSAGECHAT, 200);
-    BuildMonsterChat(&data, GetObjectGuid(), CHAT_MSG_MONSTER_YELL, text, language, GetName(), target ? target->GetObjectGuid() : ObjectGuid(), target ? target->GetName() : "");
-    SendMessageToSetInRange(&data,sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_YELL),true);
+    WorldPacket data;
+    ChatHandler::BuildChatPacket(data, CHAT_MSG_MONSTER_YELL, text, LANG_UNIVERSAL, CHAT_TAG_NONE, GetObjectGuid(), GetName(),
+        target ? target->GetObjectGuid() : ObjectGuid(),target ? target->GetName() : "");
+    SendMessageToSetInRange(&data, sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_YELL), true);
 }
 
 void WorldObject::MonsterTextEmote(const char* text, Unit const* target, bool IsBossEmote) const
 {
-    WorldPacket data(SMSG_MESSAGECHAT, 200);
-    BuildMonsterChat(&data, GetObjectGuid(), IsBossEmote ? CHAT_MSG_RAID_BOSS_EMOTE : CHAT_MSG_MONSTER_EMOTE, text, LANG_UNIVERSAL,
-        GetName(), target ? target->GetObjectGuid() : ObjectGuid(), target ? target->GetName() : "");
+    WorldPacket data;
+    ChatHandler::BuildChatPacket(data, IsBossEmote ? CHAT_MSG_RAID_BOSS_EMOTE : CHAT_MSG_MONSTER_EMOTE, text, LANG_UNIVERSAL, CHAT_TAG_NONE, GetObjectGuid(), GetName(),
+        target ? target->GetObjectGuid() : ObjectGuid(),target ? target->GetName() : "");
     SendMessageToSetInRange(&data, sWorld.getConfig(IsBossEmote ? CONFIG_FLOAT_LISTEN_RANGE_YELL : CONFIG_FLOAT_LISTEN_RANGE_TEXTEMOTE), true);
 }
 
@@ -1576,9 +1582,9 @@ void WorldObject::MonsterWhisper(const char* text, Unit const* target, bool IsBo
     if (!target || target->GetTypeId() != TYPEID_PLAYER)
         return;
 
-    WorldPacket data(SMSG_MESSAGECHAT, 200);
-    BuildMonsterChat(&data, GetObjectGuid(), IsBossWhisper ? CHAT_MSG_RAID_BOSS_WHISPER : CHAT_MSG_MONSTER_WHISPER, text, LANG_UNIVERSAL,
-        GetName(), target->GetObjectGuid(), target->GetName());
+    WorldPacket data;
+    ChatHandler::BuildChatPacket(data, IsBossWhisper ? CHAT_MSG_RAID_BOSS_WHISPER : CHAT_MSG_MONSTER_WHISPER, text, LANG_UNIVERSAL, CHAT_TAG_NONE, GetObjectGuid(), GetName(),
+        target->GetObjectGuid(), target->GetName());
     ((Player*)target)->GetSession()->SendPacket(&data);
 }
 
@@ -1587,7 +1593,7 @@ namespace MaNGOS
     class MonsterChatBuilder
     {
         public:
-            MonsterChatBuilder(WorldObject const& obj, ChatMsg msgtype, MangosStringLocale const* textData, uint32 language, Unit const* target)
+            MonsterChatBuilder(WorldObject const& obj, ChatMsg msgtype, MangosStringLocale const* textData, Language language, Unit const* target)
                 : i_object(obj), i_msgtype(msgtype), i_textData(textData), i_language(language), i_target(target) {}
             void operator()(WorldPacket& data, int32 loc_idx)
             {
@@ -1597,20 +1603,21 @@ namespace MaNGOS
                 else
                     text = i_textData->Content[0].c_str();
 
-                WorldObject::BuildMonsterChat(&data, i_object.GetObjectGuid(), i_msgtype, text, i_language, i_object.GetNameForLocaleIdx(loc_idx), i_target ? i_target->GetObjectGuid() : ObjectGuid(), i_target ? i_target->GetNameForLocaleIdx(loc_idx) : "");
+                ChatHandler::BuildChatPacket(data, i_msgtype, text, i_language, CHAT_TAG_NONE, i_object.GetObjectGuid(), i_object.GetNameForLocaleIdx(loc_idx),
+                    i_target ? i_target->GetObjectGuid() : ObjectGuid(), i_target ? i_target->GetNameForLocaleIdx(loc_idx) : "");
             }
 
         private:
             WorldObject const& i_object;
             ChatMsg i_msgtype;
             MangosStringLocale const* i_textData;
-            uint32 i_language;
+            Language i_language;
             Unit const* i_target;
     };
 }                                                           // namespace MaNGOS
 
 /// Helper function to create localized around a source
-void _DoLocalizedTextAround(WorldObject const* source, MangosStringLocale const* textData, ChatMsg msgtype, uint32 language, Unit const* target, float range)
+void _DoLocalizedTextAround(WorldObject const* source, MangosStringLocale const* textData, ChatMsg msgtype, Language language, Unit const* target, float range)
 {
     MaNGOS::MonsterChatBuilder say_build(*source, msgtype, textData, language, target);
     MaNGOS::LocalizedPacketDo<MaNGOS::MonsterChatBuilder> say_do(say_build);
@@ -1626,10 +1633,10 @@ void WorldObject::MonsterText(MangosStringLocale const* textData, Unit const* ta
     switch (textData->Type)
     {
         case CHAT_TYPE_SAY:
-            _DoLocalizedTextAround(this, textData, CHAT_MSG_MONSTER_SAY, textData->Language, target, sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_SAY));
+            _DoLocalizedTextAround(this, textData, CHAT_MSG_MONSTER_SAY, textData->LanguageId, target, sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_SAY));
             break;
         case CHAT_TYPE_YELL:
-            _DoLocalizedTextAround(this, textData, CHAT_MSG_MONSTER_YELL, textData->Language, target, sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_YELL));
+            _DoLocalizedTextAround(this, textData, CHAT_MSG_MONSTER_YELL, textData->LanguageId, target, sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_YELL));
             break;
         case CHAT_TYPE_TEXT_EMOTE:
             _DoLocalizedTextAround(this, textData, CHAT_MSG_MONSTER_EMOTE, LANG_UNIVERSAL, target, sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_TEXTEMOTE));
@@ -1657,7 +1664,7 @@ void WorldObject::MonsterText(MangosStringLocale const* textData, Unit const* ta
         }
         case CHAT_TYPE_ZONE_YELL:
         {
-            MaNGOS::MonsterChatBuilder say_build(*this, CHAT_MSG_MONSTER_YELL, textData, textData->Language, target);
+            MaNGOS::MonsterChatBuilder say_build(*this, CHAT_MSG_MONSTER_YELL, textData, textData->LanguageId, target);
             MaNGOS::LocalizedPacketDo<MaNGOS::MonsterChatBuilder> say_do(say_build);
             uint32 zoneid = GetZoneId();
             Map::PlayerList const& pList = GetMap()->GetPlayers();
@@ -1667,42 +1674,6 @@ void WorldObject::MonsterText(MangosStringLocale const* textData, Unit const* ta
             break;
         }
     }
-}
-
-/*
-void WorldObject::MonsterWhisper(int32 textId, Unit const* target, bool IsBossWhisper) const
-{
-    if (!target || target->GetTypeId() != TYPEID_PLAYER)
-        return;
-
-    uint32 loc_idx = ((Player*)target)->GetSession()->GetSessionDbLocaleIndex();
-    char const* text = sObjectMgr.GetMangosString(textId, loc_idx);
-
-    WorldPacket data(SMSG_MESSAGECHAT, 200);
-    BuildMonsterChat(&data, GetObjectGuid(), IsBossWhisper ? CHAT_MSG_RAID_BOSS_WHISPER : CHAT_MSG_MONSTER_WHISPER, text, LANG_UNIVERSAL,
-        GetNameForLocaleIdx(loc_idx), target->GetObjectGuid(), "");
-
-    ((Player*)target)->GetSession()->SendPacket(&data);
-}
-*/
-
-void WorldObject::BuildMonsterChat(WorldPacket *data, ObjectGuid senderGuid, uint8 msgtype, char const* text, uint32 language, char const* name, ObjectGuid targetGuid, char const* targetName)
-{
-    *data << uint8(msgtype);
-    *data << uint32(language);
-    *data << ObjectGuid(senderGuid);
-    *data << uint32(0);                                     // 2.1.0
-    *data << uint32(strlen(name)+1);
-    *data << name;
-    *data << ObjectGuid(targetGuid);                        // Unit Target
-    if (targetGuid && !targetGuid.IsPlayer())
-    {
-        *data << uint32(strlen(targetName)+1);              // target name length
-        *data << targetName;                                // target name
-    }
-    *data << uint32(strlen(text)+1);
-    *data << text;
-    *data << uint8(0);                                      // ChatTag
 }
 
 void WorldObject::SendMessageToSet(WorldPacket* data, bool /*bToSelf*/) const
@@ -2340,13 +2311,11 @@ WorldObjectEventProcessor* WorldObject::GetEvents()
 
 void WorldObject::KillAllEvents(bool force)
 {
-    MAPLOCK_WRITE(this, MAP_LOCK_TYPE_DEFAULT);
     GetEvents()->KillAllEvents(force);
 }
 
 void WorldObject::AddEvent(BasicEvent* Event, uint64 e_time, bool set_addtime)
 {
-    MAPLOCK_WRITE(this, MAP_LOCK_TYPE_DEFAULT);
     if (set_addtime)
         GetEvents()->AddEvent(Event, GetEvents()->CalculateTime(e_time), set_addtime);
     else
@@ -2355,11 +2324,7 @@ void WorldObject::AddEvent(BasicEvent* Event, uint64 e_time, bool set_addtime)
 
 void WorldObject::UpdateEvents(uint32 update_diff, uint32 time)
 {
-    {
-        MAPLOCK_READ(this, MAP_LOCK_TYPE_DEFAULT);
-        GetEvents()->RenewEvents();
-    }
-
+    GetEvents()->RenewEvents();
     GetEvents()->Update(update_diff);
 }
 
@@ -2381,4 +2346,20 @@ TransportBase* WorldObject::GetTransportBase()
         return ((Unit*)this)->GetTransportBase();
 
     return NULL;
+}
+
+void WorldObject::UpdateHelper::Update(uint32 time_diff)
+{
+    if (m_obj.SkipUpdate())
+    {
+        m_obj.SkipUpdate(false);
+        return;
+    }
+    uint32 realDiff = m_obj.m_updateTracker.timeElapsed();
+    if (realDiff < sWorld.getConfig(CONFIG_UINT32_INTERVAL_MAPUPDATE)/2)
+        return;
+
+    m_obj.m_updateTracker.Reset();
+    m_obj.Update(realDiff, time_diff);
+    m_obj.SetLastUpdateTime();
 }

@@ -584,7 +584,6 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(NULL), m_
     m_anticheat = new AntiCheat(this);
 
     SetPendingBind(NULL, 0);
-    m_LFGState = new LFGPlayerState(this);
 
     m_camera = new Camera(*this);
 
@@ -603,6 +602,7 @@ Player::~Player()
     {
         sAccountMgr.ClearPlayerDataCache(GetObjectGuid());
         sMapPersistentStateMgr.AddToUnbindQueue(GetObjectGuid());
+        sLFGMgr.RemoveLFGState(GetObjectGuid());
     }
 
     // Note: buy back item already deleted from DB when player was saved
@@ -641,7 +641,6 @@ Player::~Player()
     delete m_declinedname;
     delete m_runes;
     delete m_anticheat;
-    delete m_LFGState;
     delete m_camera;
 
     // Playerbot mod
@@ -1736,9 +1735,9 @@ void Player::ToggleDND()
     ToggleFlag(PLAYER_FLAGS, PLAYER_FLAGS_DND);
 }
 
-uint8 Player::GetChatTag() const
+ChatTagFlags Player::GetChatTag() const
 {
-    uint8 tag = CHAT_TAG_NONE;
+    ChatTagFlags tag = CHAT_TAG_NONE;
 
     if (isAFK())
         tag |= CHAT_TAG_AFK;
@@ -1910,6 +1909,9 @@ bool Player::TeleportTo(WorldLocation const& loc, uint32 options)
             // lets reset near teleport flag if it wasn't reset during chained teleports
             SetSemaphoreTeleportNear(false);
 
+/*
+temporarily disable precreate maps. need found reason double map creation
+
             // try create map before trying teleport on this map
             if (!map)
             {
@@ -1924,9 +1926,9 @@ bool Player::TeleportTo(WorldLocation const& loc, uint32 options)
                     return false;
                 }
             }
-
+*/
             // try preload grid, targeted for teleport
-            if (!(options & TELE_TO_NODELAY) && !map->PreloadGrid(loc.x, loc.y))
+            if (!(options & TELE_TO_NODELAY) && map && !map->PreloadGrid(loc.x, loc.y))
             {
                 // If loading grid not finished, delay teleport 5 map update ticks
                 AddEvent(new TeleportDelayEvent(*this, WorldLocation(loc.GetMapId(), loc.x, loc.y, loc.z, loc.orientation, GetPhaseMask(), map->GetInstanceId(), sWorld.getConfig(CONFIG_UINT32_REALMID)), options),
@@ -2065,7 +2067,7 @@ void Player::ProcessDelayedOperations()
 
     if (m_DelayedOperations & DELAYED_RESURRECT_PLAYER)
     {
-        ResurrectPlayer(0.0f, false);
+        ResurrectPlayer(0, false);
 
         if (GetMaxHealth() > m_resurrectHealth)
             SetHealth(m_resurrectHealth);
@@ -2277,7 +2279,7 @@ void Player::Regenerate(Powers power, uint32 diff)
                     AuraList const& ModPowerRegenPCTAuras = GetAurasByType(SPELL_AURA_MOD_POWER_REGEN_PERCENT);
                     for (AuraList::const_iterator i = ModPowerRegenPCTAuras.begin(); i != ModPowerRegenPCTAuras.end(); ++i)
                     {
-                        if ((*i)->GetModifier()->m_miscvalue == int32(power) && (*i)->GetMiscBValue()==GetCurrentRune(rune))
+                        if ((*i)->GetModifier()->m_miscvalue == int32(power) && (*i)->GetMiscValueB() == GetCurrentRune(rune))
                             cd_diff = cd_diff * ((*i)->GetModifier()->m_amount + 100) / 100;
                     }
 
@@ -2806,7 +2808,7 @@ void Player::GiveLevel(uint32 level)
 
     GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_REACH_LEVEL);
 
-    GetLFGPlayerState()->Update();
+    sLFGMgr.GetLFGPlayerState(GetObjectGuid())->Update();
 
     // resend quests status directly
     if (GetSession())
@@ -4566,9 +4568,9 @@ void Player::BuildPlayerRepop()
     SetByteValue(UNIT_FIELD_BYTES_1, 3, UNIT_BYTE1_FLAG_ALWAYS_STAND);
 }
 
-void Player::ResurrectPlayer(float restore_percent, bool applySickness)
+void Player::ResurrectPlayer(uint32 restorePercent, bool applySickness)
 {
-    WorldPacket data(SMSG_DEATH_RELEASE_LOC, 4*4);          // remove spirit healer position
+    WorldPacket data(SMSG_DEATH_RELEASE_LOC, 4 * 4);        // remove spirit healer position
     data << uint32(-1);
     data << float(0);
     data << float(0);
@@ -4595,13 +4597,16 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
 
     m_deathTimer = 0;
 
+    if (restorePercent > 100)
+        restorePercent = 100;
+
     // set health/powers (0- will be set in caller)
-    if (restore_percent > 0.0f)
+    if (restorePercent > 0)
     {
-        SetHealth(uint32(GetMaxHealth()*restore_percent));
-        SetPower(POWER_MANA, uint32(GetMaxPower(POWER_MANA)*restore_percent));
+        SetHealth(GetMaxHealth() * restorePercent / 100);
+        SetPower(POWER_MANA, GetMaxPower(POWER_MANA) * restorePercent / 100);
         SetPower(POWER_RAGE, 0);
-        SetPower(POWER_ENERGY, uint32(GetMaxPower(POWER_ENERGY)*restore_percent));
+        SetPower(POWER_ENERGY, GetMaxPower(POWER_ENERGY) * restorePercent / 100);
     }
 
     // trigger update zone for alive state zone updates
@@ -4974,7 +4979,7 @@ void Player::RepopAtGraveyard()
     // Such zones are considered unreachable as a ghost and the player must be automatically revived
     if ((!isAlive() && zone && (zone->flags & AREA_FLAG_NEED_FLY)) || IsOnTransport() || GetPositionZ() < -500.0f)
     {
-        ResurrectPlayer(0.5f);
+        ResurrectPlayer(50);
         SpawnCorpseBones();
     }
 
@@ -5025,7 +5030,7 @@ void Player::CleanupChannels()
     {
         Channel* ch = *m_channels.begin();
         m_channels.erase(m_channels.begin());               // remove from player's channel list
-        ch->Leave(GetObjectGuid(), false);                  // not send to client, not remove from player's channel list
+        ch->Leave(this, false);                             // not send to client, not remove from player's channel list
         if (ChannelMgr* cMgr = channelMgr(GetTeam()))
             cMgr->LeftChannel(ch->GetName());               // deleted channel if empty
     }
@@ -5069,10 +5074,10 @@ void Player::UpdateLocalChannels(uint32 newZone)
 
         if ((*i) != new_channel)
         {
-            new_channel->Join(GetObjectGuid(), "");         // will output Changed Channel: N. Name
+            new_channel->Join(this, "");                    // will output Changed Channel: N. Name
 
             // leave old channel
-            (*i)->Leave(GetObjectGuid(), false);            // not send leave channel, it already replaced at client
+            (*i)->Leave(this, false);                       // not send leave channel, it already replaced at client
             std::string name = (*i)->GetName();             // store name, (*i)erase in LeftChannel
             LeftChannel(*i);                                // remove from player's channel list
             cMgr->LeftChannel(name);                        // delete if empty
@@ -5087,7 +5092,7 @@ void Player::LeaveLFGChannel()
     {
         if ((*i)->IsLFG())
         {
-            (*i)->Leave(GetObjectGuid());
+            (*i)->Leave(this);
             break;
         }
     }
@@ -5099,7 +5104,7 @@ void Player::JoinLFGChannel()
     {
         if ((*i)->IsLFG())
         {
-            (*i)->Join(GetObjectGuid(), "");
+            (*i)->Join(this, "");
             break;
         }
     }
@@ -5403,7 +5408,7 @@ void Player::UpdateRating(CombatRating cr)
     AuraList const& modRatingFromStat = GetAurasByType(SPELL_AURA_MOD_RATING_FROM_STAT);
     for (AuraList::const_iterator i = modRatingFromStat.begin(); i != modRatingFromStat.end(); ++i)
         if ((*i)->GetMiscValue() & (1 << cr))
-            amount += int32(GetStat(Stats((*i)->GetMiscBValue())) * (*i)->GetModifier()->m_amount / 100.0f);
+            amount += int32(GetStat(Stats((*i)->GetMiscValueB())) * (*i)->GetModifier()->m_amount / 100.0f);
     if (amount < 0)
         amount = 0;
     SetUInt32Value(PLAYER_FIELD_COMBAT_RATING_1 + cr, uint32(amount));
@@ -14032,11 +14037,12 @@ bool Player::CanRewardQuest(Quest const* pQuest, uint32 reward, bool msg) const
     if (!CanRewardQuest(pQuest, msg))
         return false;
 
+    ItemPosCountVec dest;
+
     if (pQuest->GetRewChoiceItemsCount() > 0)
     {
         if (pQuest->RewChoiceItemId[reward])
         {
-            ItemPosCountVec dest;
             InventoryResult res = CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, pQuest->RewChoiceItemId[reward], pQuest->RewChoiceItemCount[reward]);
             if (res != EQUIP_ERR_OK)
             {
@@ -14052,7 +14058,6 @@ bool Player::CanRewardQuest(Quest const* pQuest, uint32 reward, bool msg) const
         {
             if (pQuest->RewItemId[i])
             {
-                ItemPosCountVec dest;
                 InventoryResult res = CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, pQuest->RewItemId[i], pQuest->RewItemCount[i]);
                 if (res != EQUIP_ERR_OK)
                 {
@@ -15723,6 +15728,15 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
         return false;
     }
 
+    m_atLoginFlags = fields[33].GetUInt32();
+
+    if (HasAtLoginFlag(AT_LOGIN_RENAME))
+    {
+        delete result;
+        sLog.outError("Player::LoadFromDB: %s tried to login while forced to rename, can't load.", GetGuidStr().c_str());
+        return false;
+    }
+
     // overwrite possible wrong/corrupted guid
     SetGuidValue(OBJECT_FIELD_GUID, guid);
 
@@ -16074,8 +16088,6 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
         m_stableSlots = MAX_PET_STABLES;
     }
 
-    m_atLoginFlags = fields[33].GetUInt32();
-
     // Honor system
     // Update Honor kills data
     m_lastHonorUpdateTime = logoutTime;
@@ -16350,6 +16362,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
 
     _LoadEquipmentSets(holder->GetResult(PLAYER_LOGIN_QUERY_LOADEQUIPMENTSETS));
 
+    sLFGMgr.CreateLFGState(GetObjectGuid());
     if (!GetGroup() || !GetGroup()->isLFDGroup())
     {
         sLFGMgr.RemoveMemberFromLFDGroup(GetGroup(),GetObjectGuid());
@@ -16570,7 +16583,7 @@ void Player::LoadCorpse()
         else
         {
             // Prevent Dead Player login without corpse
-            ResurrectPlayer(0.5f);
+            ResurrectPlayer(50);
         }
     }
 }
@@ -18914,37 +18927,25 @@ void Player::RemovePet(PetSaveMode mode)
     }
 }
 
-void Player::BuildPlayerChat(WorldPacket *data, uint8 msgtype, const std::string& text, uint32 language) const
-{
-    *data << uint8(msgtype);
-    *data << uint32(language);
-    *data << ObjectGuid(GetObjectGuid());
-    *data << uint32(0);                                     // 2.1.0
-    *data << ObjectGuid(GetObjectGuid());
-    *data << uint32(text.length()+1);
-    *data << text;
-    *data << uint8(GetChatTag());
-}
-
 void Player::Say(const std::string& text, const uint32 language)
 {
-    WorldPacket data(SMSG_MESSAGECHAT, 200);
-    BuildPlayerChat(&data, CHAT_MSG_SAY, text, language);
-    SendMessageToSetInRange(&data,sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_SAY),true);
+    WorldPacket data;
+    ChatHandler::BuildChatPacket(data, CHAT_MSG_SAY, text.c_str(), Language(language), GetChatTag(), GetObjectGuid(), GetName());
+    SendMessageToSetInRange(&data, sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_SAY), true);
 }
 
 void Player::Yell(const std::string& text, const uint32 language)
 {
-    WorldPacket data(SMSG_MESSAGECHAT, 200);
-    BuildPlayerChat(&data, CHAT_MSG_YELL, text, language);
-    SendMessageToSetInRange(&data,sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_YELL),true);
+    WorldPacket data;
+    ChatHandler::BuildChatPacket(data, CHAT_MSG_YELL, text.c_str(), Language(language), GetChatTag(), GetObjectGuid(), GetName());
+    SendMessageToSetInRange(&data, sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_YELL), true);
 }
 
 void Player::TextEmote(const std::string& text)
 {
-    WorldPacket data(SMSG_MESSAGECHAT, 200);
-    BuildPlayerChat(&data, CHAT_MSG_EMOTE, text, LANG_UNIVERSAL);
-    SendMessageToSetInRange(&data,sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_TEXTEMOTE),true, !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHAT));
+    WorldPacket data;
+    ChatHandler::BuildChatPacket(data, CHAT_MSG_EMOTE, text.c_str(), LANG_UNIVERSAL, GetChatTag(), GetObjectGuid(), GetName());
+    SendMessageToSetInRange(&data, sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_TEXTEMOTE), true, !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHAT));
 }
 
 void Player::Whisper(const std::string& text, uint32 language, ObjectGuid receiver)
@@ -18954,15 +18955,15 @@ void Player::Whisper(const std::string& text, uint32 language, ObjectGuid receiv
 
     Player* rPlayer = sObjectMgr.GetPlayer(receiver);
 
-    WorldPacket data(SMSG_MESSAGECHAT, 200);
-    BuildPlayerChat(&data, CHAT_MSG_WHISPER, text, language);
+    WorldPacket data;
+    ChatHandler::BuildChatPacket(data, CHAT_MSG_WHISPER, text.c_str(), Language(language), GetChatTag(), GetObjectGuid(), GetName());
     rPlayer->GetSession()->SendPacket(&data);
 
     // not send confirmation for addon messages
     if (language != LANG_ADDON)
     {
-        data.Initialize(SMSG_MESSAGECHAT, 200);
-        rPlayer->BuildPlayerChat(&data, CHAT_MSG_WHISPER_INFORM, text, language);
+        data.clear();
+        ChatHandler::BuildChatPacket(data, CHAT_MSG_WHISPER_INFORM, text.c_str(), Language(language), CHAT_TAG_NONE, rPlayer->GetObjectGuid());
         GetSession()->SendPacket(&data);
     }
 
@@ -20464,10 +20465,10 @@ bool Player::IsVisibleInGridForPlayer(Player* pl) const
     // Dead player see live players near own corpse
     if (isAlive())
     {
-        if (Corpse *corpse = pl->GetCorpse())
+        if (Corpse* corpse = pl->GetCorpse())
         {
             // 20 - aggro distance for same level, 25 - max additional distance if player level less that creature level
-            if (corpse->IsWithinDistInMap(this, (20 + 25) * sWorld.getConfig(CONFIG_FLOAT_RATE_CREATURE_AGGRO)))
+            if (corpse->IsWithinDistInMap(this, (20.0f + 25.0f) * sWorld.GetCreatureAggroRate(this)))
                 return true;
         }
     }
@@ -21756,7 +21757,7 @@ void Player::ResurectUsingRequestData()
         return;
     }
 
-    ResurrectPlayer(0.0f, false);
+    ResurrectPlayer(0, false);
 
     if (GetMaxHealth() > m_resurrectHealth)
         SetHealth(m_resurrectHealth);
@@ -24314,7 +24315,7 @@ bool Player::CheckTransferPossibility(AreaTrigger const*& at, bool b_onlyMainReq
             }
 
             // now we can resurrect player, and then check teleport requirements
-            ResurrectPlayer(0.5f);
+            ResurrectPlayer(50);
             SpawnCorpseBones();
         }
     }

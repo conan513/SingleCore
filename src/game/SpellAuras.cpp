@@ -3758,6 +3758,20 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                     else
                         target->m_AuraFlags &= ~UNIT_AURAFLAG_ALIVE_INVISIBLE;
                     return;
+                case 70733:                                 // Stoneform (ICC))
+                {
+                    target->ApplyModFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_OOC_NOT_ATTACKABLE, apply);
+                    target->SetUInt32Value(UNIT_NPC_EMOTESTATE, apply ? EMOTE_STATE_CUSTOM_SPELL_02 : 0);
+                    return;
+                }
+                case 73077:                                 // Rocket Pack (ICC, Gunship Battle)
+                {
+                    if (apply)
+                        target->CastSpell(target, 69188, true);
+                    else
+                        target->RemoveAurasDueToSpell(69188);
+                    return;
+                }
             }
             break;
         }
@@ -5497,7 +5511,7 @@ void Aura::HandleModStealth(bool apply, bool Real)
 
 void Aura::HandleInvisibility(bool apply, bool Real)
 {
-    Unit *target = GetTarget();
+    Unit* target = GetTarget();
 
     if (apply)
     {
@@ -5505,11 +5519,16 @@ void Aura::HandleInvisibility(bool apply, bool Real)
 
         target->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_IMMUNE_OR_LOST_SELECTION);
 
-        if (Real && target->GetTypeId()==TYPEID_PLAYER)
+        if (Real && target->GetTypeId() == TYPEID_PLAYER)
         {
-            // apply glow vision
-            target->SetByteFlag(PLAYER_FIELD_BYTES2, 3, PLAYER_FIELD_BYTE2_INVISIBILITY_GLOW);
-
+            Player* pPlayer = (Player*)target;
+            // do not apply during arena preparation
+            // glow vision shouldn't be active during arena preparation
+            if (!pPlayer->GetMap()->IsBattleArena() || (!pPlayer->GetBattleGround() || !(pPlayer->GetBattleGround()->GetStatus() == STATUS_WAIT_JOIN)))
+            {
+                // apply glow vision
+                target->SetByteFlag(PLAYER_FIELD_BYTES2, 3, PLAYER_FIELD_BYTE2_INVISIBILITY_GLOW);
+            }
         }
 
         // apply only if not in GM invisibility and not stealth
@@ -5525,7 +5544,7 @@ void Aura::HandleInvisibility(bool apply, bool Real)
         // recalculate value at modifier remove (current aura already removed)
         target->m_invisibilityMask = 0;
         Unit::AuraList const& auras = target->GetAurasByType(SPELL_AURA_MOD_INVISIBILITY);
-        for(Unit::AuraList::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
+        for (Unit::AuraList::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
             target->m_invisibilityMask |= (1 << (*itr)->GetModifier()->m_miscvalue);
 
         // only at real aura remove and if not have different invisibility auras.
@@ -5762,15 +5781,16 @@ void Aura::HandleAuraFakeInebriation(bool apply, bool Real)
 /*********************************************************/
 /***                  MODIFY SPEED                     ***/
 /*********************************************************/
+
 void Aura::HandleAuraModIncreaseSpeed(bool apply, bool Real)
 {
     // all applied/removed only at real aura add/remove
-    if(!Real)
+    if (!Real)
         return;
 
-    Unit *target = GetTarget();
+    Unit* target = GetTarget();
 
-    GetTarget()->UpdateSpeed(MOVE_RUN, true);
+    target->UpdateSpeed(MOVE_RUN, true);
 
     if (apply && GetSpellProto()->Id == 58875)
         target->CastSpell(target, 58876, true);
@@ -5779,52 +5799,45 @@ void Aura::HandleAuraModIncreaseSpeed(bool apply, bool Real)
 void Aura::HandleAuraModIncreaseMountedSpeed(bool apply, bool Real)
 {
     // all applied/removed only at real aura add/remove
-    if(!Real)
+    if (!Real)
         return;
 
-    Unit *target = GetTarget();
+    Unit* target = GetTarget();
 
     target->UpdateSpeed(MOVE_RUN, true);
 
     // Festive Holiday Mount
-    if (apply && GetSpellProto()->GetSpellIconID() != 1794 && target->HasAura(62061))
-        // Reindeer Transformation
-        target->CastSpell(target, 25860, true, NULL, this);
+    if (!apply && target->HasAura(62061, EFFECT_INDEX_0))
+        target->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
 }
 
 void Aura::HandleAuraModIncreaseFlightSpeed(bool apply, bool Real)
 {
     // all applied/removed only at real aura add/remove
-    if(!Real)
+    if (!Real)
         return;
 
-    Unit *target = GetTarget();
+    Unit* target = GetTarget();
 
     // Enable Fly mode for flying mounts
     if (m_modifier.m_auraname == SPELL_AURA_MOD_FLIGHT_SPEED_MOUNTED)
     {
-        WorldPacket data;
-        if (apply)
-            data.Initialize(SMSG_MOVE_SET_CAN_FLY, 12);
-        else
-            data.Initialize(SMSG_MOVE_UNSET_CAN_FLY, 12);
-
+        WorldPacket data(apply ? SMSG_MOVE_SET_CAN_FLY : SMSG_MOVE_UNSET_CAN_FLY, 8 + 4);
         data << target->GetPackGUID();
         data << uint32(0);                                      // unknown
         target->SendMessageToSet(&data, true);
 
-        //Players on flying mounts must be immune to polymorph
-        if (target->GetTypeId()==TYPEID_PLAYER)
-            target->ApplySpellImmune(GetId(),IMMUNITY_MECHANIC,MECHANIC_POLYMORPH,apply);
+        // Players on flying mounts must be immune to polymorph
+        if (target->GetTypeId() == TYPEID_PLAYER)
+            target->ApplySpellImmune(GetId(), IMMUNITY_MECHANIC, MECHANIC_POLYMORPH, apply);
 
         // Dragonmaw Illusion (overwrite mount model, mounted aura already applied)
         if (apply && target->HasAura(42016, EFFECT_INDEX_0) && target->GetMountID())
-            target->SetUInt32Value(UNIT_FIELD_MOUNTDISPLAYID,16314);
+            target->SetUInt32Value(UNIT_FIELD_MOUNTDISPLAYID, 16314);
 
         // Festive Holiday Mount
-        if (apply && GetSpellProto()->GetSpellIconID() != 1794 && target->HasAura(62061))
-            // Reindeer Transformation
-            target->CastSpell(target, 25860, true, NULL, this);
+        if (!apply && target->HasAura(62061, EFFECT_INDEX_0))
+            target->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
     }
 
     // Swift Flight Form check for higher speed flying mounts
@@ -9552,7 +9565,15 @@ void Aura::PeriodicDummyTick()
 //              // Holiday - Midsummer, Ribbon Pole Periodic Visual
 //              case 45406: break;
 //              // Parachute
-//              case 45472: break;
+                case 45472:
+                {
+                    if (target->GetTypeId() != TYPEID_PLAYER || !((Player*)target)->IsFalling())
+                        return;
+
+                    target->RemoveAurasDueToSpell(45472);
+                    target->CastSpell(target, 44795, true);
+                    return;
+                }
 //              // Alliance Flag, Extra Damage Debuff
 //              case 45898: break;
 //              // Horde Flag, Extra Damage Debuff

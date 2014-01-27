@@ -48,7 +48,7 @@
 #include "CellImpl.h"
 #include "Transports.h"
 #include "VMapFactory.h"
-#include "MovementGenerator.h"
+#include "movementGenerators/MovementGenerator.h"
 #include "movement/MoveSplineInit.h"
 #include "movement/MoveSpline.h"
 #include "CreatureLinkingMgr.h"
@@ -408,10 +408,12 @@ void Unit::Update(uint32 update_diff, uint32 p_time)
 
     // update abilities available only for fraction of time
     UpdateReactives(update_diff);
-
-    ModifyAuraState(AURA_STATE_HEALTHLESS_20_PERCENT, GetHealth() < GetMaxHealth() * 0.20f);
-    ModifyAuraState(AURA_STATE_HEALTHLESS_35_PERCENT, GetHealth() < GetMaxHealth() * 0.35f);
-    ModifyAuraState(AURA_STATE_HEALTH_ABOVE_75_PERCENT, GetHealth() > GetMaxHealth() * 0.75f);
+    if (isAlive())
+    {
+        ModifyAuraState(AURA_STATE_HEALTHLESS_20_PERCENT, GetHealth() < GetMaxHealth() * 0.20f);
+        ModifyAuraState(AURA_STATE_HEALTHLESS_35_PERCENT, GetHealth() < GetMaxHealth() * 0.35f);
+        ModifyAuraState(AURA_STATE_HEALTH_ABOVE_75_PERCENT, GetHealth() > GetMaxHealth() * 0.75f);
+    }
     UpdateSplineMovement(p_time);
     GetUnitStateMgr().Update(p_time);
 }
@@ -540,28 +542,40 @@ void Unit::resetAttackTimer(WeaponAttackType type)
     m_attackTimer[type] = uint32(GetAttackTime(type) * m_modAttackSpeedPct[type]);
 }
 
-float Unit::GetMeleeAttackDistance(Unit* pVictim /* NULL */) const
+float Unit::GetCombatReach(Unit const* pVictim, bool forMeleeRange /*=true*/, float flat_mod /*=0.0f*/) const
 {
-    // The measured values show BASE_MELEE_OFFSET in (1.3224, 1.342)
-    float sizefactor = GetObjectBoundingRadius() + pVictim->GetObjectBoundingRadius();
-    float dist = GetFloatValue(UNIT_FIELD_COMBATREACH) +
-        (pVictim ? pVictim->GetFloatValue(UNIT_FIELD_COMBATREACH) : 0.0f) +
-        sizefactor +
-        BASE_MELEERANGE_OFFSET;
+    float victimReach = (pVictim && pVictim->IsInWorld())
+        ? pVictim->GetFloatValue(UNIT_FIELD_COMBATREACH)
+        : 0.0f;
 
-    return (dist < ATTACK_DISTANCE) ? ATTACK_DISTANCE : dist;
+    float reach = GetFloatValue(UNIT_FIELD_COMBATREACH) + victimReach +
+        BASE_MELEERANGE_OFFSET + flat_mod; // The measured values show BASE_MELEE_OFFSET in (1.3224, 1.342)
+
+    if (forMeleeRange && reach < ATTACK_DISTANCE)
+        reach = ATTACK_DISTANCE;
+
+    return reach;
 }
 
-bool Unit::CanReachWithMeleeAttack(Unit* pVictim, float flat_mod /*= 0.0f*/) const
+float Unit::GetCombatDistance(Unit const* pVictim, bool forMeleeRange) const
 {
-    if (!pVictim || !pVictim->IsInWorld())
+    if (!pVictim)
+        return 0.0f;
+
+    float radius = GetCombatReach(pVictim, forMeleeRange);
+    float dist = GetPosition().GetDistance(pVictim->GetPosition()) - radius;
+    return (dist > M_NULL_F ? dist : 0.0f);
+}
+
+bool Unit::CanReachWithMeleeAttack(Unit const* pVictim, float flat_mod /*=0.0f*/) const
+{
+    if (!pVictim || !pVictim->IsInWorld() || !InSamePhase(pVictim))
         return false;
 
-    float reach = GetMeleeAttackDistance(pVictim) + flat_mod;
+    float reach = GetCombatReach(pVictim, true, flat_mod);
 
     // This check is not related to bounding radius of both units!
     return GetPosition().GetDistance(pVictim->GetPosition()) < reach;
-
 }
 
 void Unit::RemoveSpellsCausingAura(AuraType auraType)
@@ -6313,7 +6327,7 @@ Aura* Unit::GetAura(uint32 spellId, SpellEffectIndex effindex)
 
 Aura* Unit::GetAura(AuraType type, SpellFamily family, ClassFamilyMask const& classMask, ObjectGuid casterGuid)
 {
-    MAPLOCK_READ(this,MAP_LOCK_TYPE_AURAS);
+    MAPLOCK_TRYREAD(this,MAP_LOCK_TYPE_AURAS);
     AuraList& auras = GetAurasByType(type);
     for(AuraList::iterator i = auras.begin(); i != auras.end(); ++i)
     {
@@ -7254,7 +7268,7 @@ bool Unit::Attack(Unit *victim, bool meleeAttack)
         if (VehicleKitPtr vehicle = GetVehicle())
         {
             if (VehicleSeatEntry const* seatInfo = vehicle->GetSeatInfo(this))
-                if (!seatInfo->m_flags & (SEAT_FLAG_CAN_CAST | SEAT_FLAG_CAN_ATTACK))
+                if (!(seatInfo->m_flags & (SEAT_FLAG_CAN_CAST | SEAT_FLAG_CAN_ATTACK)))
                     return false;
         }
     }
@@ -7706,16 +7720,6 @@ void Unit::Uncharm()
         charm->RemoveSpellsCausingAura(SPELL_AURA_MOD_POSSESS_PET);
         charm->SetCharmerGuid(ObjectGuid());
     }
-}
-
-float Unit::GetCombatDistance( const Unit* target ) const
-{
-    if (!target)
-        return 0.0f;
-
-    float radius = GetFloatValue(UNIT_FIELD_COMBATREACH) + target->GetFloatValue(UNIT_FIELD_COMBATREACH);
-    float dist = GetPosition().GetDistance(target->GetPosition()) - radius;
-    return (dist > M_NULL_F ? dist : 0.0f);
 }
 
 void Unit::SetPet(Pet* pet)
@@ -8589,7 +8593,7 @@ int32 Unit::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask)
             if((*i)->GetModifier()->m_miscvalue & schoolMask)
             {
                 // stat used stored in miscValueB for this aura
-                Stats usedStat = Stats((*i)->GetMiscBValue());
+                Stats usedStat = Stats((*i)->GetMiscValueB());
                 DoneAdvertisedBenefit += int32(GetStat(usedStat) * (*i)->GetModifier()->m_amount / 100.0f);
             }
         }
@@ -9314,8 +9318,9 @@ void Unit::MeleeDamageBonusDone(DamageInfo* damageInfo, uint32 stack)
     if (damageInfo->damage == 0 || ( damageInfo->GetSpellProto() && damageInfo->GetSpellProto()->HasAttribute(SPELL_ATTR_EX6_NO_DMG_MODS)))
         return;
 
-    MAPLOCK_READ(this,MAP_LOCK_TYPE_AURAS);
-    MAPLOCK_READ1(pVictim,MAP_LOCK_TYPE_AURAS);
+    MAPLOCK_READ(this, MAP_LOCK_TYPE_AURAS);
+    if (GetMap() != pVictim->GetMap())
+        MAPLOCK_READ1(pVictim, MAP_LOCK_TYPE_AURAS);
 
     // differentiate for weapon damage based spells
     bool isWeaponDamageBasedSpell = !(damageInfo->GetSpellProto() && (damageInfo->damageType == DOT || IsSpellHaveEffect(damageInfo->GetSpellProto(), SPELL_EFFECT_SCHOOL_DAMAGE)));
@@ -9877,7 +9882,7 @@ void Unit::Unmount(bool from_aura)
 void Unit::SetInCombatWith(Unit* enemy)
 {
     Unit* eOwner = enemy->GetCharmerOrOwnerOrSelf();
-    if (eOwner->IsPvP())
+    if (eOwner->IsPvP() || eOwner->IsFFAPvP())
     {
         SetInCombatState(true, enemy);
         return;
@@ -12879,37 +12884,19 @@ void Unit::UpdateModelData()
 
     if (CreatureModelInfo const* modelInfo = sObjectMgr.GetCreatureModelInfo(GetDisplayId()))
     {
-        if (GetTypeId() == TYPEID_PLAYER)
-        {
-            // Bounding radius and combat reach is normally modified by scale, but player is always 1.0 scale by default so no need to modify values here.
-            boundingRadius = modelInfo->bounding_radius;
-            combatReach = modelInfo->combat_reach;
-        }
-        else
-        {
-            // We expect values in database to be relative to scale = 1.0
-            float scaled_radius = GetObjectScale() * modelInfo->bounding_radius;
-
-            boundingRadius = scaled_radius < 2.0f ? scaled_radius : 2.0f;
-            combatReach = GetObjectScale() * (modelInfo->bounding_radius < 2.0 ? modelInfo->combat_reach : modelInfo->combat_reach / modelInfo->bounding_radius);
-        }
+        boundingRadius = modelInfo->bounding_radius;
+        combatReach = modelInfo->combat_reach;
     }
     else
     {
-        if (GetTypeId() == TYPEID_PLAYER)
-        {
-            boundingRadius = DEFAULT_WORLD_OBJECT_SIZE;
-            combatReach = 1.5f;
-        }
-        else
-        {
-            boundingRadius = GetObjectScale() * DEFAULT_WORLD_OBJECT_SIZE;
-            combatReach = GetObjectScale() * BASE_MELEERANGE_OFFSET;
-        }
+        boundingRadius = DEFAULT_WORLD_OBJECT_SIZE;
+        combatReach = DEFAULT_COMBAT_REACH;
     }
 
-    SetFloatValue(UNIT_FIELD_BOUNDINGRADIUS, boundingRadius);
-    SetFloatValue(UNIT_FIELD_COMBATREACH, combatReach);
+    float scale = GetObjectScale();
+
+    SetFloatValue(UNIT_FIELD_BOUNDINGRADIUS, boundingRadius * scale);
+    SetFloatValue(UNIT_FIELD_COMBATREACH, combatReach * scale);
 }
 
 void Unit::ClearComboPointHolders()
@@ -13590,6 +13577,10 @@ void Unit::ExitVehicle(bool forceDismount)
         _ExitVehicle(forceDismount);
         sLog.outDetail("Unit::ExitVehicle: unit %s leave vehicle %s but no control aura!", GetObjectGuid().GetString().c_str(), vehicleBase->GetObjectGuid().GetString().c_str());
     }
+
+    // Need test!
+    if (vehicleBase->IsOnTransport())
+        vehicleBase->GetTransport()->AddPassenger(this, vehicleBase->GetTransport()->GetTransportPosition());
 
     // While dismount process unit may lost VehicleKit
     if (dismiss && !vehicleBase->HasAuraType(SPELL_AURA_CONTROL_VEHICLE))
