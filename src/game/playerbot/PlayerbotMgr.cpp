@@ -26,6 +26,22 @@ void PlayerbotHolder::UpdateAIInternal(uint32 elapsed)
 {
 }
 
+void PlayerbotHolder::UpdateSessions(uint32 elapsed)
+{
+    for (PlayerBotMap::const_iterator itr = GetPlayerBotsBegin(); itr != GetPlayerBotsEnd(); ++itr)
+    {
+        Player* const bot = itr->second;
+        if (bot->IsBeingTeleported())
+        {
+            bot->GetPlayerbotAI()->HandleTeleportAck();
+        }
+        else if (bot->IsInWorld())
+        {
+            bot->GetSession()->HandleBotPackets();
+        }
+    }
+}
+
 void PlayerbotHolder::LogoutAllBots()
 {
     while (true)
@@ -448,3 +464,4 @@ void PlayerbotMgr::OnBotLoginInternal(Player * const bot)
     bot->GetPlayerbotAI()->SetMaster(master);
     bot->GetPlayerbotAI()->ResetStrategies();
 }
+

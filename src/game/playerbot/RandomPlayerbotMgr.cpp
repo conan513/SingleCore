@@ -224,14 +224,21 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
         if (!map)
             continue;
 
-        const TerrainInfoPtr terrain = map->GetTerrain();
+        const TerrainInfo * terrain = map->GetTerrain();
+        if (!terrain)
+            continue;
+
+        AreaTableEntry const* area = sAreaStore.LookupEntry(terrain->GetAreaId(x, y, z));
+        if (!area)
+            continue;
+
         if (!terrain->IsOutdoors(x, y, z) ||
                 terrain->IsAboveWater(x, y, z) ||
                 terrain->IsUnderWater(x, y, z) ||
                 terrain->IsInWater(x, y, z))
             continue;
 
-        sLog.outDetail("Random teleporting bot %s to %u %f,%f,%f", bot->GetName(), loc.GetMapId(), x, y, z);
+        sLog.outDetail("Random teleporting bot %s to %s %f,%f,%f", bot->GetName(), area->area_name[0], x, y, z);
         z = 0.05f + map->GetTerrain()->GetHeightStatic(x, y, 0.05f + z, true, MAX_HEIGHT);
         bot->TeleportTo(loc.GetMapId(), x, y, z, 0);
         return;

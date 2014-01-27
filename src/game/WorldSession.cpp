@@ -323,48 +323,10 @@ bool WorldSession::Update(PacketFilter& updater)
         delete packet;
     }
 
-	// Playerbot mod - Process player bot packets
-    // The PlayerbotAI class adds to the packet queue to simulate a real player
-    // since Playerbots are known to the World obj only by its master's WorldSession object
-    // we need to process all master's bot's packets.
-    if (GetPlayer() && GetPlayer()->GetPlayerbotMgr()) {
-        for (PlayerBotMap::const_iterator itr = GetPlayer()->GetPlayerbotMgr()->GetPlayerBotsBegin();
-                itr != GetPlayer()->GetPlayerbotMgr()->GetPlayerBotsEnd(); ++itr)
-        {
-            Player* const botPlayer = itr->second;
-            if (botPlayer->IsBeingTeleported())
-                botPlayer->GetPlayerbotAI()->HandleTeleportAck();
-            else if (botPlayer->IsInWorld())
-            {
-                WorldPacket* packet;
-                WorldSession* const pBotWorldSession = botPlayer->GetSession();
-                while (pBotWorldSession->_recvQueue.next(packet))
-                {
-                    OpcodeHandler& opHandle = opcodeTable[packet->GetOpcode()];
-                    (pBotWorldSession->*opHandle.handler)(*packet);
-                    delete packet;
-                }
-            }
-        }
-    }
-    for (PlayerBotMap::const_iterator itr = sRandomPlayerbotMgr.GetPlayerBotsBegin();
-            itr != sRandomPlayerbotMgr.GetPlayerBotsEnd(); ++itr)
-    {
-        Player* const botPlayer = itr->second;
-        if (botPlayer->IsBeingTeleported())
-            botPlayer->GetPlayerbotAI()->HandleTeleportAck();
-        else if (botPlayer->IsInWorld())
-        {
-            WorldPacket* packet;
-            WorldSession* const pBotWorldSession = botPlayer->GetSession();
-            while (pBotWorldSession->_recvQueue.next(packet))
-            {
-                OpcodeHandler& opHandle = opcodeTable[packet->GetOpcode()];
-                (pBotWorldSession->*opHandle.handler)(*packet);
-                delete packet;
-            }
-        }
-    }
+	// playerbot mod
+    if (GetPlayer() && GetPlayer()->GetPlayerbotMgr())
+        GetPlayer()->GetPlayerbotMgr()->UpdateSessions(0);
+    // end of playerbot mod
 
     if (m_Socket && !m_Socket->IsClosed() && m_Warden && GetPlayer() && !GetPlayer()->GetPlayerbotAI())
         m_Warden->Update();
@@ -390,6 +352,17 @@ bool WorldSession::Update(PacketFilter& updater)
     }
 
     return true;
+}
+
+void WorldSession::HandleBotPackets()
+{
+    WorldPacket* packet;
+    while (_recvQueue.next(packet))
+    {
+        OpcodeHandler& opHandle = opcodeTable[packet->GetOpcode()];
+        (this->*opHandle.handler)(*packet);
+        delete packet;
+    }
 }
 
 /// %Log the player out
