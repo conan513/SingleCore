@@ -8052,7 +8052,7 @@ bool ObjectMgr::LoadMangosStrings(DatabaseType& db, char const* table, int32 min
                 data.Language = LANG_UNIVERSAL;
             }
 
-            if (data.Type >= CHAT_TYPE_MAX)
+            if (data.Type > CHAT_TYPE_ZONE_YELL)
             {
                 _DoStringError(entry, "Entry %i in table `%s` has Type %u but this Chat Type does not exist.", entry, table, data.Type);
                 data.Type = CHAT_TYPE_SAY;

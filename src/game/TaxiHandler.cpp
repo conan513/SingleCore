@@ -26,7 +26,7 @@
 #include "Player.h"
 #include "UpdateMask.h"
 #include "Path.h"
-#include "movementGenerators/WaypointMovementGenerator.h"
+#include "WaypointMovementGenerator.h"
 
 void WorldSession::HandleTaxiNodeStatusQueryOpcode( WorldPacket & recv_data )
 {

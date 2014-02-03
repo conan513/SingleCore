@@ -330,8 +330,6 @@ class MANGOS_DLL_SPEC Map : public GridRefManager<NGridType>
         };
         bool ScriptsStart(ScriptMapMapName const& scripts, uint32 id, Object* source, Object* target, ScriptExecutionParam execParams = SCRIPT_EXEC_PARAM_NONE);
         void ScriptCommandStart(ScriptInfo const& script, uint32 delay, Object* source, Object* target);
-        ScriptAction* GetNextSheduledScript();
-        bool EraseScriptAction(ScriptAction* action);
 
         // must called with AddToWorld
         void AddToActive(WorldObject* obj);
@@ -492,6 +490,7 @@ class MANGOS_DLL_SPEC Map : public GridRefManager<NGridType>
         float m_VisibleDistance;
 
         MapRefManager m_mapRefManager;
+        MapRefManager::iterator m_mapRefIter;
 
         GuidSet m_activeObjects;
         GuidSet m_activeObjectsSafeCopy;
@@ -606,15 +605,19 @@ class MANGOS_DLL_SPEC BattleGroundMap : public Map
 };
 
 template<class T, class CONTAINER>
-inline void Map::Visit(Cell const& cell, TypeContainerVisitor<T, CONTAINER>& visitor)
+inline void
+Map::Visit(const Cell& cell, TypeContainerVisitor<T, CONTAINER> &visitor)
 {
-    NGridType const* cgrid = getNGridWithoutLock(cell.GridX(), cell.GridY());
-    if (cell.NoCreate() && !IsGridObjectDataLoaded(cgrid))
-        return;
-    if (!IsGridObjectDataLoaded(cgrid))
+    const uint32 x = cell.GridX();
+    const uint32 y = cell.GridY();
+    const uint32 cell_x = cell.CellX();
+    const uint32 cell_y = cell.CellY();
+
+    if (!cell.NoCreate() || loaded(GridPair(x,y)))
+    {
         EnsureGridLoaded(cell);
-    NGridType& grid = *getNGrid(cell.GridX(), cell.GridY());
-    grid.Visit(cell.CellX(), cell.CellY(), visitor);
+        getNGrid(x, y)->Visit(cell_x, cell_y, visitor);
+    }
 }
 
 #endif

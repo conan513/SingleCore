@@ -203,7 +203,7 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
 
 void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs)
 {
-    if (bot->IsBeingTeleported() || bot->IsBeingTeleportedDelayEvent())
+    if (bot->IsBeingTeleported())
         return;
 
     if (locs.empty())
@@ -220,11 +220,11 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
         float y = loc.getY() + urand(0, sPlayerbotAIConfig.grindDistance) - sPlayerbotAIConfig.grindDistance / 2;
         float z = loc.getZ();
 
-        MapPtr map = sMapMgr.GetMapPtr(loc.GetMapId(), 0);
+        Map* map = sMapMgr.FindMap(loc.GetMapId());
         if (!map)
             continue;
 
-        const TerrainInfoPtr terrain = map->GetTerrain();
+        const TerrainInfo * terrain = map->GetTerrain();
         if (!terrain)
             continue;
 
@@ -240,9 +240,6 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
 
         sLog.outDetail("Random teleporting bot %s to %s %f,%f,%f", bot->GetName(), area->area_name[0], x, y, z);
         z = 0.05f + map->GetTerrain()->GetHeightStatic(x, y, 0.05f + z, true, MAX_HEIGHT);
-        map = MapPtr();
-
-        bot->GetMotionMaster()->Clear();
         bot->TeleportTo(loc.GetMapId(), x, y, z, 0);
         return;
     }
@@ -843,19 +840,4 @@ uint32 RandomPlayerbotMgr::GetTradeDiscount(Player* bot)
 {
     Group* group = bot->GetGroup();
     return GetLootAmount(bot) / (group ? group->GetMembersCount() : 10);
-}
-
-void RandomPlayerbotMgr::UpdateSessions()
-{
-    for (PlayerBotMap::const_iterator itr = sRandomPlayerbotMgr.GetPlayerBotsBegin();
-            itr != sRandomPlayerbotMgr.GetPlayerBotsEnd(); ++itr)
-    {
-        Player* const botPlayer = itr->second;
-        if (botPlayer->IsBeingTeleported())
-            botPlayer->GetPlayerbotAI()->HandleTeleportAck();
-        else if (botPlayer->IsInWorld())
-        {
-            botPlayer->GetSession()->HandleBotPackets();
-        }
-    }
 }

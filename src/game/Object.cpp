@@ -33,8 +33,8 @@
 #include "MapManager.h"
 #include "Log.h"
 #include "Transports.h"
-#include "movementGenerators/TargetedMovementGenerator.h"
-#include "movementGenerators/WaypointMovementGenerator.h"
+#include "TargetedMovementGenerator.h"
+#include "WaypointMovementGenerator.h"
 #include "VMapFactory.h"
 #include "CellImpl.h"
 #include "GridNotifiers.h"
@@ -2340,11 +2340,13 @@ WorldObjectEventProcessor* WorldObject::GetEvents()
 
 void WorldObject::KillAllEvents(bool force)
 {
+    MAPLOCK_WRITE(this, MAP_LOCK_TYPE_DEFAULT);
     GetEvents()->KillAllEvents(force);
 }
 
 void WorldObject::AddEvent(BasicEvent* Event, uint64 e_time, bool set_addtime)
 {
+    MAPLOCK_WRITE(this, MAP_LOCK_TYPE_DEFAULT);
     if (set_addtime)
         GetEvents()->AddEvent(Event, GetEvents()->CalculateTime(e_time), set_addtime);
     else
@@ -2353,7 +2355,11 @@ void WorldObject::AddEvent(BasicEvent* Event, uint64 e_time, bool set_addtime)
 
 void WorldObject::UpdateEvents(uint32 update_diff, uint32 time)
 {
-    GetEvents()->RenewEvents();
+    {
+        MAPLOCK_READ(this, MAP_LOCK_TYPE_DEFAULT);
+        GetEvents()->RenewEvents();
+    }
+
     GetEvents()->Update(update_diff);
 }
 
@@ -2375,20 +2381,4 @@ TransportBase* WorldObject::GetTransportBase()
         return ((Unit*)this)->GetTransportBase();
 
     return NULL;
-}
-
-void WorldObject::UpdateHelper::Update(uint32 time_diff)
-{
-    if (m_obj.SkipUpdate())
-    {
-        m_obj.SkipUpdate(false);
-        return;
-    }
-    uint32 realDiff = m_obj.m_updateTracker.timeElapsed();
-    if (realDiff < sWorld.getConfig(CONFIG_UINT32_INTERVAL_MAPUPDATE)/2)
-        return;
-
-    m_obj.m_updateTracker.Reset();
-    m_obj.Update(realDiff, time_diff);
-    m_obj.SetLastUpdateTime();
 }

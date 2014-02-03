@@ -5,7 +5,6 @@
 #include "../../PlayerbotAIConfig.h"
 #include "../ItemVisitors.h"
 #include "../../RandomPlayerbotMgr.h"
-#include "../../../LFGMgr.h"
 
 using namespace ai;
 
@@ -23,21 +22,19 @@ bool LfgJoinAction::Execute(Event event)
     if (sLFGMgr.GetQueueInfo(bot->GetObjectGuid()))
         return false;
 
-    if (bot->IsBeingTeleported() || bot->IsBeingTeleportedDelayEvent())
+    if (bot->IsBeingTeleported())
         return false;
 
-    MapPtr map = bot->GetMapPtr();
+    Map* map = bot->GetMap();
     if (map && map->Instanceable())
         return false;
-
-    map = MapPtr();
 
     return JoinProposal();
 }
 
 bool LfgJoinAction::SetRoles()
 {
-    LFGPlayerState* state = sLFGMgr.GetLFGPlayerState(bot->GetObjectGuid());
+    LFGPlayerState* state = bot->GetLFGPlayerState();
     if (!state)
         return false;
 
@@ -88,7 +85,7 @@ bool LfgJoinAction::SetRoles()
 
 bool LfgJoinAction::JoinProposal()
 {
-    LFGPlayerState* state = sLFGMgr.GetLFGPlayerState(bot->GetObjectGuid());
+    LFGPlayerState* state = bot->GetLFGPlayerState();
     if (!state)
         return false;
 
@@ -133,22 +130,22 @@ bool LfgJoinAction::JoinProposal()
 
     if (random)
 	{
-		sLog.outDebug("Bot %s joined to LFG_TYPE_RANDOM_DUNGEON", bot->GetName());
+		sLog.outDetail("Bot %s joined to LFG_TYPE_RANDOM_DUNGEON", bot->GetName());
         state->SetType(LFG_TYPE_RANDOM_DUNGEON);
 	}
     else if (heroic)
 	{
-		sLog.outDebug("Bot %s joined to LFG_TYPE_HEROIC_DUNGEON", bot->GetName());
+		sLog.outDetail("Bot %s joined to LFG_TYPE_HEROIC_DUNGEON", bot->GetName());
         state->SetType(LFG_TYPE_HEROIC_DUNGEON);
 	}
     else if (raid)
 	{
-		sLog.outDebug("Bot %s joined to LFG_TYPE_RAID", bot->GetName());
+		sLog.outDetail("Bot %s joined to LFG_TYPE_RAID", bot->GetName());
         state->SetType(LFG_TYPE_RAID);
 	}
     else
 	{
-		sLog.outDebug("Bot %s joined to LFG_TYPE_DUNGEON", bot->GetName());
+		sLog.outDetail("Bot %s joined to LFG_TYPE_DUNGEON", bot->GetName());
         state->SetType(LFG_TYPE_DUNGEON);
 	}
 
@@ -179,7 +176,7 @@ bool LfgRoleCheckAction::Execute(Event event)
 
 bool LfgAcceptAction::Execute(Event event)
 {
-    LFGPlayerState* botState = sLFGMgr.GetLFGPlayerState(bot->GetObjectGuid());
+    LFGPlayerState* botState = bot->GetLFGPlayerState();
     if (!botState || botState->GetState() != LFG_STATE_PROPOSAL)
         return false;
 
@@ -198,7 +195,6 @@ bool LfgAcceptAction::Execute(Event event)
         {
             sRandomPlayerbotMgr.Refresh(bot);
             ai->ResetStrategies();
-            bot->GetMotionMaster()->Clear();
             bot->TeleportToHomebind();
         }
         return true;

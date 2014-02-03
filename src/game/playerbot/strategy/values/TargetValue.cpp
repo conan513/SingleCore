@@ -34,8 +34,7 @@ void FindTargetStrategy::GetPlayerCount(Unit* creature, int* tankCount, int* dps
     *tankCount = 0;
     *dpsCount = 0;
 
-    MapPtr map = bot->GetMapPtr();
-    GuidSet attackers = map->GetAttackersFor(bot->GetObjectGuid());
+    GuidSet attackers = creature->GetMap()->GetAttackersFor(bot->GetObjectGuid());
     for (GuidSet::const_iterator i = attackers.begin(); i != attackers.end(); i++)
     {
         ObjectGuid guid = *i;
@@ -51,7 +50,6 @@ void FindTargetStrategy::GetPlayerCount(Unit* creature, int* tankCount, int* dps
         else
             (*dpsCount)++;
     }
-    map = MapPtr();
 
     tankCountCache[creature] = *tankCount;
     dpsCountCache[creature] = *dpsCount;

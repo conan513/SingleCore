@@ -183,10 +183,7 @@ void PlayerbotAI::HandleTeleportAck()
 		bot->GetSession()->HandleMoveTeleportAckOpcode(p);
 	}
 	else if (bot->IsBeingTeleportedFar())
-	{
 		bot->GetSession()->HandleMoveWorldportAckOpcode();
-		SetNextCheckDelay(1000);
-	}
 }
 
 void PlayerbotAI::Reset()
@@ -409,8 +406,11 @@ void PlayerbotAI::ChangeEngine(BotState type)
 
 void PlayerbotAI::DoNextAction()
 {
-    if (bot->IsBeingTeleported() || bot->IsBeingTeleportedDelayEvent() || (GetMaster() && GetMaster()->IsBeingTeleported()))
+    if (bot->IsBeingTeleported() || (GetMaster() && GetMaster()->IsBeingTeleported()))
         return;
+
+    bot->UpdateUnderwaterState(bot->GetMap(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
+    bot->CheckAreaExploreAndOutdoor();
 
     currentEngine->DoNextAction(NULL);
 

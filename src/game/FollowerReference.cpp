@@ -17,7 +17,7 @@
  */
 
 #include "Unit.h"
-#include "movementGenerators/TargetedMovementGenerator.h"
+#include "TargetedMovementGenerator.h"
 #include "FollowerReference.h"
 
 void FollowerReference::targetObjectBuildLink()

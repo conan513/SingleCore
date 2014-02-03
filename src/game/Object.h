@@ -90,9 +90,9 @@ class WorldUpdateCounter
     public:
         WorldUpdateCounter() : m_tmStart(0) {}
 
-        uint32 timeElapsed()
+        time_t timeElapsed()
         {
-            if (!m_tmStart)
+            if(!m_tmStart)
                 m_tmStart = WorldTimer::tickPrevTime();
 
             return WorldTimer::getMSTimeDiff(m_tmStart, WorldTimer::tickTime());
@@ -451,16 +451,25 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         class MANGOS_DLL_SPEC UpdateHelper
         {
             public:
-                explicit UpdateHelper(WorldObject& obj) : m_obj(obj) {}
+                explicit UpdateHelper(WorldObject * obj) : m_obj(obj) {}
                 ~UpdateHelper() {}
 
-                void Update(uint32 time_diff);
+                void Update(uint32 time_diff)
+                {
+                    if (m_obj->SkipUpdate())
+                    {
+                        m_obj->SkipUpdate(false);
+                        return;
+                    }
+                    m_obj->Update(m_obj->m_updateTracker.timeElapsed(), time_diff);
+                    m_obj->m_updateTracker.Reset();
+                }
 
             private:
                 UpdateHelper( const UpdateHelper& );
                 UpdateHelper& operator=( const UpdateHelper& );
 
-                WorldObject& m_obj;
+                WorldObject * const m_obj;
         };
 
         virtual ~WorldObject();

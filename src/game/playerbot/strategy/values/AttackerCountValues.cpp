@@ -7,10 +7,7 @@ using namespace ai;
 
 uint8 MyAttackerCountValue::Calculate()
 {
-    MapPtr map = bot->GetMapPtr();
-    uint8 count = map->GetAttackersFor(bot->GetObjectGuid()).size();
-    map = MapPtr();
-    return count;
+    return bot->GetMap()->GetAttackersFor(bot->GetObjectGuid()).size();
 }
 
 bool HasAggroValue::Calculate()

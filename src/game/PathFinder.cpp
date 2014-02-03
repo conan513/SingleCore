@@ -75,7 +75,10 @@ bool PathFinder::calculate(float destX, float destY, float destZ, bool forceDest
 
     updateFilter();
 
-    BuildPolyPath(start, dest);
+    {
+        ReadGuard Guard(MMAP::MMapFactory::createOrGetMMapManager()->GetLock(m_sourceUnit->GetMapId()));
+        BuildPolyPath(start, dest);
+    }
     return true;
 }
 

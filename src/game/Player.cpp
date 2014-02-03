@@ -588,6 +588,7 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(NULL), m_
     m_anticheat = new AntiCheat(this);
 
     SetPendingBind(NULL, 0);
+    m_LFGState = new LFGPlayerState(this);
 
     m_camera = new Camera(*this);
 
@@ -606,7 +607,6 @@ Player::~Player()
     {
         sAccountMgr.ClearPlayerDataCache(GetObjectGuid());
         sMapPersistentStateMgr.AddToUnbindQueue(GetObjectGuid());
-        sLFGMgr.RemoveLFGState(GetObjectGuid());
     }
 
     // Note: buy back item already deleted from DB when player was saved
@@ -645,6 +645,7 @@ Player::~Player()
     delete m_declinedname;
     delete m_runes;
     delete m_anticheat;
+    delete m_LFGState;
     delete m_camera;
 
     // Playerbot mod
@@ -1901,9 +1902,6 @@ bool Player::TeleportTo(WorldLocation const& loc, uint32 options)
             // lets reset near teleport flag if it wasn't reset during chained teleports
             SetSemaphoreTeleportNear(false);
 
-/*
-temporarily disable precreate maps. need found reason double map creation
-
             // try create map before trying teleport on this map
             if (!map)
             {
@@ -1918,9 +1916,9 @@ temporarily disable precreate maps. need found reason double map creation
                     return false;
                 }
             }
-*/
+
             // try preload grid, targeted for teleport
-            if (!(options & TELE_TO_NODELAY) && map && !map->PreloadGrid(loc.x, loc.y))
+            if (!(options & TELE_TO_NODELAY) && !map->PreloadGrid(loc.x, loc.y))
             {
                 // If loading grid not finished, delay teleport 5 map update ticks
                 AddEvent(new TeleportDelayEvent(*this, WorldLocation(loc.GetMapId(), loc.x, loc.y, loc.z, loc.orientation, GetPhaseMask(), map->GetInstanceId(), sWorld.getConfig(CONFIG_UINT32_REALMID)), options),
@@ -2271,7 +2269,7 @@ void Player::Regenerate(Powers power, uint32 diff)
                     AuraList const& ModPowerRegenPCTAuras = GetAurasByType(SPELL_AURA_MOD_POWER_REGEN_PERCENT);
                     for (AuraList::const_iterator i = ModPowerRegenPCTAuras.begin(); i != ModPowerRegenPCTAuras.end(); ++i)
                     {
-                        if ((*i)->GetModifier()->m_miscvalue == int32(power) && (*i)->GetMiscValueB() == GetCurrentRune(rune))
+                        if ((*i)->GetModifier()->m_miscvalue == int32(power) && (*i)->GetMiscBValue()==GetCurrentRune(rune))
                             cd_diff = cd_diff * ((*i)->GetModifier()->m_amount + 100) / 100;
                     }
 
@@ -2800,7 +2798,7 @@ void Player::GiveLevel(uint32 level)
 
     GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_REACH_LEVEL);
 
-    sLFGMgr.GetLFGPlayerState(GetObjectGuid())->Update();
+    GetLFGPlayerState()->Update();
 
     // resend quests status directly
     if (GetSession())
@@ -5403,7 +5401,7 @@ void Player::UpdateRating(CombatRating cr)
     AuraList const& modRatingFromStat = GetAurasByType(SPELL_AURA_MOD_RATING_FROM_STAT);
     for (AuraList::const_iterator i = modRatingFromStat.begin(); i != modRatingFromStat.end(); ++i)
         if ((*i)->GetMiscValue() & (1 << cr))
-            amount += int32(GetStat(Stats((*i)->GetMiscValueB())) * (*i)->GetModifier()->m_amount / 100.0f);
+            amount += int32(GetStat(Stats((*i)->GetMiscBValue())) * (*i)->GetModifier()->m_amount / 100.0f);
     if (amount < 0)
         amount = 0;
     SetUInt32Value(PLAYER_FIELD_COMBAT_RATING_1 + cr, uint32(amount));
@@ -16350,7 +16348,6 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
 
     _LoadEquipmentSets(holder->GetResult(PLAYER_LOGIN_QUERY_LOADEQUIPMENTSETS));
 
-    sLFGMgr.CreateLFGState(GetObjectGuid());
     if (!GetGroup() || !GetGroup()->isLFDGroup())
     {
         sLFGMgr.RemoveMemberFromLFDGroup(GetGroup(),GetObjectGuid());

@@ -209,7 +209,10 @@ namespace MMAP
         dtTileRef tileRef = 0;
 
         dtStatus dtResult;
-        dtResult = mmap->navMesh->addTile(data, fileHeader.size, DT_TILE_FREE_DATA, 0, &tileRef);
+        {
+            ReadGuard Guard(GetLock(mapId));
+            dtResult = mmap->navMesh->addTile(data, fileHeader.size, DT_TILE_FREE_DATA, 0, &tileRef);
+        }
 
         // memory allocated for data is now managed by detour, and will be deallocated when the tile is removed
         if (dtStatusSucceed(dtResult))
