@@ -32,18 +32,15 @@
 class SpellAuraHolder;
 class UnitAction;
 class VehicleKit;
-class Map;
-class TerrainInfo;
 
 #ifndef NOTSAFE_SEMAPHORE_OVERHANDLING
     OBJECT_SAFE_HANDLER(SpellAuraHolder,SpellAuraHolderPtr);
+    OBJECT_SAFE_HANDLER(UnitAction,UnitActionPtr);
+    OBJECT_SAFE_HANDLER(VehicleKit,VehicleKitPtr);
 #else
     OBJECT_HANDLER(SpellAuraHolder,SpellAuraHolderPtr);
+    OBJECT_HANDLER(UnitAction,UnitActionPtr);
+    OBJECT_HANDLER(VehicleKit,VehicleKitPtr);
 #endif
-
-OBJECT_HANDLER(UnitAction,UnitActionPtr);
-OBJECT_HANDLER(VehicleKit,VehicleKitPtr);
-OBJECT_HANDLER(Map,MapPtr);
-OBJECT_SAFE_HANDLER(TerrainInfo,TerrainInfoPtr);
 
 #endif
