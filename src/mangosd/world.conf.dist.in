@@ -279,7 +279,7 @@ MapUpdate.MaxVisitorsInUpdate = 9
 MapUpdate.MaxVisitsInUpdate = 10
 ObjectLoadingSplitter.MaxAllowedTime = 10
 Calendar.RemoveExpiredEvents = -1
-MapUpdate.PositionUpdateDelay = 2000
+MapUpdate.PositionUpdateDelay = 400
 vmap.Dynamic.DoubleCheck = 0
 
 ###################################################################################################################
