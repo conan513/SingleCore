@@ -461,14 +461,8 @@ int WorldSocket::Update (void)
     if (closing_)
         return -1;
 
-    if (m_OutActive)
+    if (m_OutActive || (m_OutBuffer->length() == 0 && msg_queue()->is_empty()))
         return 0;
-
-    {
-        ACE_GUARD_RETURN(LockType, Guard, m_OutBufferLock, 0);
-        if (m_OutBuffer->length() == 0 && msg_queue()->is_empty())
-            return 0;
-    }
 
     int ret;
     do
@@ -1024,10 +1018,7 @@ int WorldSocket::HandlePing(WorldPacket& recvPacket)
         ACE_GUARD_RETURN(LockType, Guard, m_SessionLock, -1);
 
         if (m_Session)
-        {
             m_Session->SetLatency(latency);
-            m_Session->ResetClientTimeDelay();
-        }
         else
         {
             sLog.outError("WorldSocket::HandlePing: peer sent CMSG_PING, "

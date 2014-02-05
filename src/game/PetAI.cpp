@@ -39,6 +39,7 @@ int PetAI::Permissible(const Creature *creature)
 
 PetAI::PetAI(Creature* c) : CreatureAI(c), inCombat(false)
 {
+    m_AllySet.clear();
     Reset();
 }
 
@@ -496,15 +497,14 @@ void PetAI::UpdateAI(const uint32 diff)
             // not required to be stopped case
             else if (DoMeleeAttackIfReady())
             {
-                pVictim = m_creature->getVictim();
-                if (!pVictim)
-                    return;
+                if (pVictim = m_creature->getVictim())
+                {
+                    // if pet misses its target, it will also be the first in threat list
+                    pVictim->AddThreat(m_creature);
 
-                // if pet misses its target, it will also be the first in threat list
-                pVictim->AddThreat(m_creature);
-
-                if (_needToStop())
-                    _stopAttack();
+                    if (_needToStop())
+                        _stopAttack();
+                }
             }
         }
 
@@ -537,27 +537,24 @@ void PetAI::UpdateAI(const uint32 diff)
     {
         AttackStart(target);
     }
-    else if (owner)
+    else if (owner && owner->IsInCombat())
     {
         switch (m_creature->GetCharmState(CHARM_STATE_REACT))
         {
             case REACT_DEFENSIVE:
             {
-                if (!m_primaryTargetGuid)
-                {
-                    Unit* ownerVictim = owner->getVictim();
-                    if (ownerVictim && ownerVictim->isAlive())
-                        AttackStart(ownerVictim);
-                }
+                if (!pVictim || !pVictim->isAlive() ||
+                    (!m_primaryTargetGuid && owner->getVictim() != pVictim && owner->getVictim()->isAlive()))
+                    AttackStart(owner->getAttackerForHelper());
                 break;
             }
             case REACT_AGGRESSIVE:
             {
-                if (Unit* pTarget = owner->getAttackerForHelper())
-                    AttackStart(pTarget);
+                if (!pVictim || !pVictim->isAlive())
+                    AttackStart(owner->getAttackerForHelper());
                 break;
             }
-            // case REACT_PASSIVE:
+            case REACT_PASSIVE:
             default:
                 break;
         }
@@ -622,15 +619,11 @@ void PetAI::UpdateAI(const uint32 diff)
 
             Unit* autoCastTarget = NULL;
 
-            if (inCombat)
+            if (inCombat && m_creature->getVictim() && !m_creature->hasUnitState(UNIT_STAT_FOLLOW))
             {
-                Unit* pVictim = m_creature->getVictim();
-                if (pVictim && !m_creature->hasUnitState(UNIT_STAT_FOLLOW))
-                {
-                    SpellCastResult result = CanAutoCast(pVictim, spellInfo);
-                    if (result == SPELL_CAST_OK || result == SPELL_FAILED_UNIT_NOT_INFRONT)
-                        autoCastTarget = pVictim;
-                }
+                SpellCastResult result = CanAutoCast(m_creature->getVictim(), spellInfo);
+                if (result == SPELL_CAST_OK || result == SPELL_FAILED_UNIT_NOT_INFRONT)
+                    autoCastTarget = m_creature->getVictim();
             }
 
             if (!autoCastTarget)
@@ -721,8 +714,7 @@ void PetAI::UpdateAI(const uint32 diff)
 
                 if (Unit* victim = m_creature->getVictim())
                 {
-                    Unit* victimVictim = victim->getVictim();
-                    if (!victimVictim || (victimVictim->GetObjectGuid() != m_creature->GetObjectGuid()))
+                    if (!victim->getVictim() || (victim->getVictim()->GetObjectGuid() != m_creature->GetObjectGuid()))
                     {
                         currentSpells.push_back(GetSpellType(PET_SPELL_ATTACKSTART));
                         currentSpells.push_back(GetSpellType(PET_SPELL_THREAT));

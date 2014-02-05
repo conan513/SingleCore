@@ -173,9 +173,7 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
 
     targets.Update(pUser);
 
-    Unit* pTarget = pUser->GetMap()->GetUnit(pUser->GetTargetGuid());
-
-    if (!pItem->IsTargetValidForItemUse(pTarget))
+    if (!pItem->IsTargetValidForItemUse(targets.getUnitTarget()))
     {
         // free gray item after use fail
         pUser->SendEquipError(EQUIP_ERR_NONE, pItem, NULL);
@@ -394,17 +392,13 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
         mover = _mover;
 
     // casting own spells on some vehicles
-    if (Player* plr = mover->GetCharmerOrOwnerPlayerOrPlayerItself())
+    if (mover->IsVehicle() && mover->GetCharmerOrOwnerPlayerOrPlayerItself())
     {
-        if (mover->IsVehicle() && (mover != plr))
-        {
-            if (VehicleKitPtr vehicle = mover->GetVehicleKit())
-            {
-                if (VehicleSeatEntry const* seatInfo = vehicle->GetSeatInfo(plr))
-                    if (seatInfo->m_flags & (SEAT_FLAG_CAN_ATTACK | SEAT_FLAG_CAN_CAST))
-                        mover = plr;
-            }
-        }
+        Player *plr = mover->GetCharmerOrOwnerPlayerOrPlayerItself();
+        if (mover->GetVehicleKit()->GetSeatInfo(plr) &&
+           ((mover->GetVehicleKit()->GetSeatInfo(plr)->m_flags & SEAT_FLAG_CAN_ATTACK) ||
+            (mover->GetVehicleKit()->GetSeatInfo(plr)->m_flags & SEAT_FLAG_CAN_CAST) ))
+            mover = plr;
     }
 
     bool triggered = false;

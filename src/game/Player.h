@@ -1065,10 +1065,6 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         void AddToWorld();
         virtual void RemoveFromWorld(bool remove) override;
-        virtual void SetMap(Map* map) override;
-        virtual void ResetMap() override;
-        // Used for lock map from unloading. Use with caution!
-        MapPtr GetMapPtr() { return m_mapPtr; };
 
         bool TeleportTo(uint32 mapid, float x, float y, float z, float orientation, uint32 options = 0)
         {
@@ -1088,7 +1084,7 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         bool Create( uint32 guidlow, const std::string& name, uint8 race, uint8 class_, uint8 gender, uint8 skin, uint8 face, uint8 hairStyle, uint8 hairColor, uint8 facialHair, uint8 outfitId );
 
-        virtual void Update(uint32 update_diff, uint32 time) override;
+        void Update(uint32 update_diff, uint32 time) override;
 
         static bool BuildEnumData( QueryResult * result,  WorldPacket * p_data );
 
@@ -1730,8 +1726,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         ActionButton const* GetActionButton(uint8 button);
 
         PvPInfo pvpInfo;
-        void UpdatePvP(bool state, bool bOverride = false);
-        void UpdateZone(uint32 newZone, uint32 newArea);
+        void UpdatePvP(bool state, bool ovrride=false);
+        void UpdateZone(uint32 newZone,uint32 newArea);
         void UpdateArea(uint32 newArea);
         uint32 GetCachedZoneId() const { return m_zoneUpdateId; }
 
@@ -1760,9 +1756,10 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         bool IsGroupVisibleFor(Player* p) const;
         bool IsInSameGroupWith(Player const* p) const;
-        bool IsInSameRaidWith(Player const* p) const { return p == this || (GetGroupGuid() && GetGroupGuid() == p->GetGroupGuid()); }
+        bool IsInSameRaidWith(Player const* p) const { return p==this || (GetGroup() != NULL && GetGroup() == p->GetGroup()); }
         void UninviteFromGroup();
-        void RemoveFromGroup(bool logout = false);
+        static void RemoveFromGroup(Group* group, ObjectGuid guid);
+        void RemoveFromGroup() { RemoveFromGroup(GetGroup(), GetObjectGuid()); }
         void SendUpdateToOutOfRangeGroupMembers();
         void SetAllowLowLevelRaid(bool allow) { ApplyModFlag(PLAYER_FLAGS, PLAYER_FLAGS_ENABLE_LOW_LEVEL_RAID, allow); }
         bool GetAllowLowLevelRaid() const { return HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_ENABLE_LOW_LEVEL_RAID); }
@@ -2189,8 +2186,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool CanUseBattleGroundObject();
         bool isTotalImmune();
 
-        void SetRandomBGWinner(bool winner);
-        bool IsRandomBGWinner() { return m_isRandomBGWinner; }
+        bool GetRandomWinner() { return m_IsBGRandomWinner; }
+        void SetRandomWinner(bool isWinner);
 
         /*********************************************************/
         /***                 OUTDOOR PVP SYSTEM                ***/
@@ -2374,14 +2371,12 @@ class MANGOS_DLL_SPEC Player : public Unit
         /***                   GROUP SYSTEM                    ***/
         /*********************************************************/
 
-        ObjectGuid const& GetGroupInvite() { return m_groupInviteGuid; }
-        void SetGroupInvite(ObjectGuid const& groupGuid) { m_groupInviteGuid = groupGuid; }
-        ObjectGuid const& GetGroupGuid() const { return m_groupGuid; };
-        ObjectGuid const& GetOriginalGroupGuid() const { return m_originalGroupGuid; };
-        Group* GetGroup();
-        Group const* GetGroup() const;
+        Group * GetGroupInvite() { return m_groupInvite; }
+        void SetGroupInvite(Group *group) { m_groupInvite = group; }
+        Group * GetGroup() { return m_group.getTarget(); }
+        const Group * GetGroup() const { return (const Group*)m_group.getTarget(); }
         GroupReference& GetGroupRef() { return m_group; }
-        void SetGroup(ObjectGuid const& groupGuid, int8 subgroup = -1);
+        void SetGroup(Group *group, int8 subgroup = -1);
         uint8 GetSubGroup() const { return m_group.getSubGroup(); }
         uint32 GetGroupUpdateFlag() const { return m_groupUpdateMask; }
         void SetGroupUpdateFlag(uint32 flag) { m_groupUpdateMask |= flag; }
@@ -2390,13 +2385,12 @@ class MANGOS_DLL_SPEC Player : public Unit
         Player* GetNextRandomRaidMember(float radius, bool onlyAlive);
         PartyResult CanUninviteFromGroup() const;
         // BattleGround Group System
-        void SetBattleGroundRaid(ObjectGuid const& guid, int8 subgroup = -1);
+        void SetBattleGroundRaid(Group *group, int8 subgroup = -1);
         void RemoveFromBattleGroundRaid();
-        // Original group mechanic
-        Group* GetOriginalGroup();
+        Group * GetOriginalGroup() { return m_originalGroup.getTarget(); }
         GroupReference& GetOriginalGroupRef() { return m_originalGroup; }
         uint8 GetOriginalSubGroup() const { return m_originalGroup.getSubGroup(); }
-        void SetOriginalGroup(ObjectGuid const& guid, int8 subgroup = -1);
+        void SetOriginalGroup(Group *group, int8 subgroup = -1);
 
         GridReference<Player> &GetGridRef() { return m_gridRef; }
         MapReference &GetMapRef() { return m_mapRef; }
@@ -2485,8 +2479,7 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         BgBattleGroundQueueID_Rec m_bgBattleGroundQueueID[PLAYER_MAX_BATTLEGROUND_QUEUES];
         BGData                    m_bgData;
-
-        bool m_isRandomBGWinner;
+        bool m_IsBGRandomWinner;
 
         /*********************************************************/
         /***                    QUEST SYSTEM                   ***/
@@ -2679,14 +2672,11 @@ class MANGOS_DLL_SPEC Player : public Unit
         PlayerSocial *m_social;
 
         // Groups
-        ObjectGuid m_groupInviteGuid;
-        ObjectGuid m_groupGuid;
         GroupReference m_group;
+        GroupReference m_originalGroup;
+        Group *m_groupInvite;
         uint32 m_groupUpdateMask;
         uint64 m_auraUpdateMask;
-
-        ObjectGuid m_originalGroupGuid;
-        GroupReference m_originalGroup;
 
         // Player summoning
         time_t m_summon_expire;
@@ -2750,8 +2740,6 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         GridReference<Player> m_gridRef;
         MapReference m_mapRef;
-
-        MapPtr m_mapPtr;
 
         // Playerbot mod:
         PlayerbotAI* m_playerbotAI;

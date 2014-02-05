@@ -40,7 +40,7 @@ void TargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T& owner, bool up
     {
         // some spells should be able to be cast while moving
         // maybe some attribute? here, check the entry of creatures useing these spells
-        switch (owner.GetEntry())
+        switch(owner.GetEntry())
         {
             case 36633: // Ice Sphere (Lich King)
             case 37562: // Volatile Ooze and Gas Cloud (Putricide)
@@ -55,8 +55,7 @@ void TargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T& owner, bool up
         return;
 
     float x, y, z;
-    Unit* pVictim = owner.getVictim();
-    bool targetIsVictim = pVictim && pVictim->GetObjectGuid() == i_target->GetObjectGuid();
+    bool targetIsVictim = owner.getVictim() && owner.getVictim()->GetObjectGuid() == i_target->GetObjectGuid();
 
     // i_path can be NULL in case this is the first call for this MMGen (via Update)
     // Can happen for example if no path was created on MMGen-Initialize because of the owner being stunned
@@ -74,7 +73,6 @@ void TargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T& owner, bool up
         {
             // to nearest contact position
             float dist = 0.0f;
-
             if (targetIsVictim)
                 dist = owner.GetFloatValue(UNIT_FIELD_COMBATREACH) + i_target->GetFloatValue(UNIT_FIELD_COMBATREACH) - i_target->GetObjectBoundingRadius() - owner.GetObjectBoundingRadius() - 1.0f;
 
@@ -86,10 +84,7 @@ void TargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T& owner, bool up
         else
         {
             // to at i_offset distance from target and i_angle from target facing
-            if (this->GetMovementGeneratorType() == CHASE_MOTION_TYPE)
-                i_target->GetNearPoint(&owner, x, y, z, owner.GetObjectBoundingRadius(), i_offset, i_target->GetOrientation() + i_angle);
-            else
-                i_target->GetClosePoint(x, y, z, owner.GetObjectBoundingRadius(), i_offset, i_angle, &owner);
+            i_target->GetClosePoint(x, y, z, owner.GetObjectBoundingRadius(), i_offset, i_angle, &owner);
         }
     }
     else
@@ -187,16 +182,13 @@ bool TargetedMovementGeneratorMedium<T, D>::Update(T& owner, const uint32& time_
     {
         i_recheckDistance.Reset(RECHECK_DISTANCE_TIMER);
 
-        // More distance let have better performance, less distance let have more sensitive reaction at target move.
-        // float allowed_dist = owner.GetObjectBoundingRadius() + sWorld.getConfig(CONFIG_FLOAT_RATE_TARGET_POS_RECALCULATION_RANGE);
-
-        Unit* pVictim = owner.getVictim();
-        bool targetIsVictim = pVictim && pVictim->GetObjectGuid() == i_target->GetObjectGuid();
+        //More distance let have better performance, less distance let have more sensitive reaction at target move.
+        //float allowed_dist = owner.GetObjectBoundingRadius() + sWorld.getConfig(CONFIG_FLOAT_RATE_TARGET_POS_RECALCULATION_RANGE);
 
         float allowed_dist = 0.0f;
-
+        bool targetIsVictim = owner.getVictim() && owner.getVictim()->GetObjectGuid() == i_target->GetObjectGuid();
         if (targetIsVictim)
-            allowed_dist = owner.GetMeleeAttackDistance(pVictim) + owner.GetObjectBoundingRadius();
+            allowed_dist = owner.GetMeleeAttackDistance(owner.getVictim()) + owner.GetObjectBoundingRadius();
         else
             allowed_dist = i_target->GetObjectBoundingRadius() + owner.GetObjectBoundingRadius() + sWorld.getConfig(CONFIG_FLOAT_RATE_TARGET_POS_RECALCULATION_RANGE);
 
@@ -212,10 +204,10 @@ bool TargetedMovementGeneratorMedium<T, D>::Update(T& owner, const uint32& time_
 
         if (targetIsVictim && owner.GetTypeId() == TYPEID_UNIT && !((Creature*)&owner)->IsPet())
         {
-            if ((!pVictim || !pVictim->isAlive()) && owner.movespline->Finalized())
+            if ((!owner.getVictim() || !owner.getVictim()->isAlive()) && owner.movespline->Finalized())
                 return false;
 
-            if (!i_offset && owner.movespline->Finalized() && !owner.CanReachWithMeleeAttack(pVictim)
+            if (!i_offset && owner.movespline->Finalized() && !owner.CanReachWithMeleeAttack(owner.getVictim())
                 && !i_target->m_movementInfo.HasMovementFlag(MOVEFLAG_PENDINGSTOP))
             {
                 if (i_targetSearchingTimer >= TARGET_NOT_ACCESSIBLE_MAX_TIMER)
@@ -274,9 +266,8 @@ void ChaseMovementGenerator<Creature>::Initialize(Creature& owner)
     owner.addUnitState(UNIT_STAT_CHASE | UNIT_STAT_CHASE_MOVE);
     _setTargetLocation(owner, true);
 
-    Unit* pVictim = owner.getVictim();
-    if (pVictim && !owner.hasUnitState(UNIT_STAT_MELEE_ATTACKING))
-        owner.Attack(pVictim, !owner.IsNonMeleeSpellCasted(true));
+    if (owner.getVictim() && !owner.hasUnitState(UNIT_STAT_MELEE_ATTACKING))
+        owner.Attack(owner.getVictim(), !owner.IsNonMeleeSpellCasted(true));
 }
 
 template<class T>

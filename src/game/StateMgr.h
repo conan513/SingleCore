@@ -21,6 +21,7 @@
 #define _STATEMGR_H
 
 #include "ObjectHandler.h"
+#include "LockedMap.h"
 #include "Common.h"
 #include "MotionMaster.h"
 #include "StateMgrImpl.h"
@@ -78,7 +79,7 @@ public:
 //    ActionInfo(ActionInfo const& _action) {};
 };
 
-typedef std::map<UnitActionPriority, ActionInfo> UnitActionStorage;
+typedef ACE_Based::LockedMap<UnitActionPriority, ActionInfo> UnitActionStorage;
 
 class UnitStateMgr
 {

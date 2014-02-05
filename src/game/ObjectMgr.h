@@ -47,7 +47,6 @@ class Group;
 class ArenaTeam;
 class Item;
 class SQLStorage;
-class MOTransport;
 
 struct GameTele
 {
@@ -624,9 +623,6 @@ class ObjectMgr
         void AddGroup(Group* group);
         void RemoveGroup(Group* group);
 
-        GroupMap::iterator GetGroupMapBegin() { return mGroupMap.begin(); }
-        GroupMap::iterator GetGroupMapEnd()   { return mGroupMap.end(); }
-
         ArenaTeam* GetArenaTeamById(uint32 arenateamid) const;
         ArenaTeam* GetArenaTeamByName(const std::string& arenateamname) const;
         ArenaTeam* GetArenaTeamByCaptain(ObjectGuid guid) const;
@@ -863,11 +859,11 @@ class ObjectMgr
 
         void LoadTransports(Map* map);
         void LoadTransports();
-        typedef UNORDERED_SET<MOTransport*> TransportSet;
+        typedef UNORDERED_SET<Transport*> TransportSet;
         TransportSet const& GetTransports() { return m_Transports; };
 
-        MOTransport* GetTransportByGuid(ObjectGuid const& guid);
-        MOTransport const* GetTransportByGOMapId(uint32 mapid) const;
+        Transport* GetTransportByGuid(ObjectGuid const& guid);
+        Transport const* GetTransportByGOMapId(uint32 mapid) const;
 
         std::string GeneratePetName(uint32 entry);
         uint32 GetBaseXP(uint32 level) const;
@@ -1110,14 +1106,14 @@ class ObjectMgr
         GameTele const* GetGameTele(uint32 id) const
         {
             GameTeleMap::const_iterator itr = m_GameTeleMap.find(id);
-            return itr != m_GameTeleMap.end() ? &itr->second : NULL;
+            if(itr==m_GameTeleMap.end()) return NULL;
+            return &itr->second;
         }
 
-        GameTele const* GetGameTele(std::string const& name) const;
-        GameTele const* GetGameTeleExactName(std::string const& name) const;
+        GameTele const* GetGameTele(const std::string& name) const;
         GameTeleMap const& GetGameTeleMap() const { return m_GameTeleMap; }
         bool AddGameTele(GameTele& data);
-        bool DeleteGameTele(std::string const& name);
+        bool DeleteGameTele(const std::string& name);
 
         uint32 GetNpcGossip(uint32 entry) const
         {

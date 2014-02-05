@@ -629,13 +629,11 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
         virtual bool Create(uint32 guidlow, uint32 name_id, Map* map, uint32 phaseMask, float x, float y, float z, float ang,
                     QuaternionData rotation = QuaternionData(), uint8 animprogress = GO_ANIMPROGRESS_DEFAULT, GOState go_state = GO_STATE_READY);
 
-        virtual void Update(uint32 update_diff, uint32 p_time) override;
+        void Update(uint32 update_diff, uint32 p_time) override;
         GameObjectInfo const* GetGOInfo() const;
 
         virtual bool IsTransport() const override;
-        virtual bool IsMOTransport() const override;
         bool IsDynTransport() const;
-        virtual TransportKit* GetTransportKit() override { return NULL; };
 
         bool HasStaticDBSpawnData() const;                  // listed in `gameobject` table and have fixed in DB guid
 

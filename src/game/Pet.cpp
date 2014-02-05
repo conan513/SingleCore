@@ -58,9 +58,6 @@ Pet::~Pet()
 {
     m_spells.clear();
 
-    while (!m_scalingQueue.empty())
-        m_scalingQueue.pop();
-
     delete m_declinedname;
 
     if (m_PetScalingData)
@@ -839,7 +836,7 @@ void Pet::GivePetXP(uint32 xp)
 
     uint32 nextLvlXP = GetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP);
     uint32 curXP = GetUInt32Value(UNIT_FIELD_PETEXPERIENCE);
-    uint32 newXP = curXP + xp * sWorld.getConfig(CONFIG_FLOAT_RATE_XP_PETKILL);
+    uint32 newXP = curXP + xp;
 
     while (newXP >= nextLvlXP && level < maxlevel)
     {
@@ -3301,8 +3298,8 @@ Unit* Pet::SelectPreferredTargetForSpell(SpellEntry const* spellInfo)
             break;
 
         case SPELL_PREFERRED_TARGET_VICTIM:
-            if (Unit* pVictim = getVictim())
-                target = pVictim;
+            if (getVictim())
+                target = getVictim();
             else
                 target = SelectAttackingTarget(ATTACKING_TARGET_TOPAGGRO, 0, spellInfo, 0);
             break;

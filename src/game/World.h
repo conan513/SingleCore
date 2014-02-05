@@ -74,17 +74,16 @@ enum ShutdownExitCode
 /// Timers for different object refresh rates
 enum WorldTimers
 {
-    WUPDATE_AUCTIONS      = 0,
-    WUPDATE_WEATHERS      = 1,
-    WUPDATE_UPTIME        = 2,
-    WUPDATE_CORPSES       = 3,
-    WUPDATE_EVENTS        = 4,
-    WUPDATE_DELETECHARS   = 5,
-    WUPDATE_AHBOT         = 6,
+    WUPDATE_AUCTIONS    = 0,
+    WUPDATE_WEATHERS    = 1,
+    WUPDATE_UPTIME      = 2,
+    WUPDATE_CORPSES     = 3,
+    WUPDATE_EVENTS      = 4,
+    WUPDATE_DELETECHARS = 5,
+    WUPDATE_AHBOT       = 6,
     WUPDATE_AUTOBROADCAST = 7,
-    WUPDATE_WORLDSTATE    = 8,
-    WUPDATE_CALENDAR      = 9,
-    WUPDATE_GROUPS        = 10,
+    WUPDATE_WORLDSTATE  = 8,
+    WUPDATE_CALENDAR    = 9,
     WUPDATE_COUNT
 };
 
@@ -223,8 +222,6 @@ enum eConfigUInt32Values
     CONFIG_UINT32_OBJECTLOADINGSPLITTER_ALLOWEDTIME,
     CONFIG_UINT32_POSITION_UPDATE_DELAY,
     CONFIG_UINT32_RESIST_CALC_METHOD,
-    CONFIG_UINT32_GROUPLEADER_RECONNECT_PERIOD,
-    CONFIG_UINT32_CREATURE_RESPAWN_AGGRO_DELAY,
     CONFIG_UINT32_VALUE_COUNT
 };
 
@@ -262,7 +259,6 @@ enum eConfigFloatValues
     CONFIG_FLOAT_RATE_DROP_ITEM_REFERENCED,
     CONFIG_FLOAT_RATE_DROP_MONEY,
     CONFIG_FLOAT_RATE_XP_KILL,
-    CONFIG_FLOAT_RATE_XP_PETKILL,
     CONFIG_FLOAT_RATE_XP_QUEST,
     CONFIG_FLOAT_RATE_XP_EXPLORE,
     CONFIG_FLOAT_RATE_RAF_XP,
@@ -421,13 +417,11 @@ enum eConfigBoolValues
     CONFIG_BOOL_RESET_DUEL_AREA_ENABLED,
     CONFIG_BOOL_PET_ADVANCED_AI,
     CONFIG_BOOL_PET_ADVANCED_AI_SLACKER,
-    CONFIG_BOOL_RESILIENCE_ALTERNATIVE_CALCULATION,
+    CONFIG_BOOL_RESILENCE_ALTERNATIVE_CALCULATION,
     CONFIG_BOOL_BLINK_ANIMATION_TYPE,
     CONFIG_BOOL_FACTION_AND_RACE_CHANGE_WITHOUT_RENAMING,
     CONFIG_BOOL_RESIST_ADD_BY_OVER_LEVEL,
     CONFIG_BOOL_DYNAMIC_VMAP_DOUBLE_CHECK,
-    CONFIG_BOOL_INSTANCES_RESET_GROUP_ANNOUNCE,
-    CONFIG_BOOL_PLAYER_COMMANDS,
     CONFIG_BOOL_VALUE_COUNT
 };
 
@@ -529,7 +523,7 @@ struct CliCommandHolder
 class World
 {
     public:
-        static ACE_Atomic_Op<ACE_Thread_Mutex, uint32> m_worldLoopCounter;
+        static volatile uint32 m_worldLoopCounter;
 
         World();
         ~World();
@@ -622,7 +616,7 @@ class World
         void ShutdownMsg(bool show = false, Player* player = NULL);
         static uint8 GetExitCode() { return m_ExitCode; }
         static void StopNow(uint8 exitcode) { m_stopEvent = true; m_ExitCode = exitcode; }
-        static bool IsStopped() { return m_stopEvent.value(); }
+        static bool IsStopped() { return m_stopEvent; }
 
         void Update(uint32 diff);
 
@@ -724,7 +718,7 @@ class World
         bool configNoReload(bool reload, eConfigFloatValues index, char const* fieldname, float defvalue);
         bool configNoReload(bool reload, eConfigBoolValues index, char const* fieldname, bool defvalue);
 
-        static ACE_Atomic_Op<ACE_Thread_Mutex, bool> m_stopEvent;
+        static volatile bool m_stopEvent;
         static uint8 m_ExitCode;
         uint32 m_ShutdownTimer;
         uint32 m_ShutdownMask;

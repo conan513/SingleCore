@@ -25,77 +25,43 @@
 
 class Map;
 
-struct MapStatisticData
+struct MapBrokenData
 {
-    explicit MapStatisticData()
+    explicit MapBrokenData()
     {
-        BreaksReset();
-        CleanStatistic();
+        Reset();
     }
 
-    void BreaksReset()
+    void Reset()
     {
-        breaksCount = 0;
+        count = 1;
         lastErrorTime = WorldTimer::getMSTime();
     };
 
-    void IncreaseBreaksCount() { ++breaksCount; ++summBreaksCount; lastErrorTime = WorldTimer::getMSTime(); };
-
-    void CleanStatistic() 
-    {
-        updatesCount = 0;
-        maxUpdateTime = 0;
-        minUpdateTime = 0;
-        averageUpdateTime = 0;
-        lifeTime = 0;
-        summBreaksCount = 0;
-    };
-
-    // Freeze detection/statistic
-    uint32 breaksCount;
+    void IncreaseCount() { ++count; lastErrorTime = WorldTimer::getMSTime();};
+    uint32 count;
     uint32 lastErrorTime;
-
-    // common statistic
-    //
-    uint32 updatesCount;
-    uint32 maxUpdateTime;
-    uint32 minUpdateTime;
-    uint32 averageUpdateTime;
-    uint32 lifeTime;
-    uint32 summBreaksCount;
 };
 
-typedef UNORDERED_MAP<Map*, MapStatisticData> MapStatisticDataMap;
+typedef std::map<Map*,MapBrokenData> MapBrokenDataMap;
 
 class MapUpdater : public ObjectUpdateTaskBase<class Map>
 {
     public:
 
-        MapUpdater();
+        MapUpdater() : ObjectUpdateTaskBase<class Map>()
+        {}
 
         virtual ~MapUpdater() {};
 
-        void ReactivateIfNeed();
-        void UpdateLoadBalancer(bool b_start);
-
         Map* GetMapByThreadId(ACE_thread_t const threadId);
+        void FreezeDetect();
+
         void MapBrokenEvent(Map* map);
-
-        MapStatisticData const* GetMapStatisticData(Map* map);
-        void MapStatisticDataRemove(Map* map);
-
-        virtual int update_hook() override;
-        virtual int freeze_hook() override;
+        MapBrokenData const* GetMapBrokenData(Map* map);
 
     private:
-        MapStatisticDataMap   m_mapStatData;
-
-        ShortIntervalTimer i_balanceTimer;
-        int32  m_threadsCountPreferred;
-        uint32 m_previewTimeStamp;
-        uint64 m_workTimeStorage;
-        uint64 m_sleepTimeStorage;
-        uint32 m_tickCount;
+        MapBrokenDataMap   m_brokendata;
 };
 
 #endif //_MAP_UPDATER_H_INCLUDED

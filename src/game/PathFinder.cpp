@@ -568,8 +568,7 @@ void PathFinder::updateFilter()
 NavTerrain PathFinder::getNavTerrain(float x, float y, float z)
 {
     GridMapLiquidData data;
-    if (m_sourceUnit->GetTerrain()->getLiquidStatus(x, y, z, MAP_ALL_LIQUIDS, &data) == LIQUID_MAP_NO_WATER)
-        return NAV_GROUND;
+    m_sourceUnit->GetTerrain()->getLiquidStatus(x, y, z, MAP_ALL_LIQUIDS, &data);
 
     switch (data.type_flags)
     {

@@ -773,7 +773,6 @@ bool IsPositiveEffect(SpellEntry const *spellproto, SpellEffectIndex effIndex)
                 case 49634:                                 // Sergeant's Flare
                 case 54530:                                 // Opening
                 case 62105:                                 // To'kini's Blowgun
-                case 64402:                                 // Rocket Strike
                     return true;
                 default:
                     break;
@@ -863,7 +862,6 @@ bool IsPositiveEffect(SpellEntry const *spellproto, SpellEffectIndex effIndex)
                         case 27202:
                         case 27203:
                         case 47669:
-                        case 64996:                         // Reorigination
                             return true;
                         default:
                             break;
@@ -2286,22 +2284,6 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 if (spellInfo_2->GetSpellFamilyFlags().test<CF_PALADIN_BLESSING_OF_KINGS>())
                     return true;
             }
-            // Black Hole (damage) and Black Hole (phase) 
-            if (MatchedSpellIdPair(62169, 62168))
-                return false; 
-
-            // Black Hole (damage) and Worm Hole (phase) 
-            if (MatchedSpellIdPair(62169, 65250))
-                return false; 
-
-            // Black Hole (damage) and Phase Punch (phase) 
-            if (MatchedSpellIdPair(62169, 64417))
-                return false;
-
-            // Auto Grow and Healthy Spore Visual 
-            if (MatchedSpellIdPair(62559, 62538))
-                return false;
-
             break;
         }
         case SPELLFAMILY_WARLOCK:
@@ -2664,20 +2646,17 @@ uint32 SpellMgr::GetSpellMaxTargetsWithCustom(SpellEntry const* spellInfo, Unit 
                 case 62374:                                 // Pursued (Ulduar, Flame Leviathan)
                 case 62400:                                 // Missile Barrage (Ulduar, Flame Leviathan)
                 case 62488:                                 // Activate Construct (Ulduar, Ignis)
-                case 62577:                                 // Blizzard (Ulduar, Thorim) 
-                case 62603:                                 // Blizzard (h) (Ulduar, Thorim)
-                case 62797:                                 // Storm Cloud (Ulduar, Hodir)
                 case 63018:                                 // Searing Light
                 case 63024:                                 // Gravity Bomb (Ulduar, XT-002)
                 case 63342:                                 // Focused Eyebeam Summon Trigger (Ulduar, Kologarn)
+                case 63387:                                 // Rapid Burst
                 case 63545:                                 // Icicle Hodir(trigger spell from 62227)
                 case 63795:                                 // Psychosis (Ulduar, Yogg-Saron)
                 case 63820:                                 // Summon Scrap Bot Trigger (Ulduar, Mimiron) use for Scrap Bots, hits npc 33856
                 case 64218:                                 // Overcharge
                 case 64234:                                 // Gravity Bomb (h) (Ulduar, XT-002)
-                case 64402:                                 // Rocket Strike (Ulduar, Mimiron)
                 case 64425:                                 // Summon Scrap Bot Trigger (Ulduar, Mimiron) use for Assault Bots, hits npc 33856
-                case 64543:                                 // Melt Ice (Ulduar, Hodir)
+                case 64531:                                 // Rapid Burst (h)
                 case 64562:                                 // Summon Flames Spread Trigger (Ulduar, Mimiron)
                 case 64623:                                 // Frost Bomb (Ulduar, Mimiron)
                 case 65121:                                 // Searing Light (h)
@@ -2769,7 +2748,7 @@ uint32 SpellMgr::GetSpellMaxTargetsWithCustom(SpellEntry const* spellInfo, Unit 
                 case 41303:                                 // Soul Drain (BT, Reliquary of Souls)
                 case 41376:                                 // Spite (BT, Reliquary of Souls)
                 case 51904:                                 // Limiting the count of Summoned Ghouls
-                case 54522:                                 // Summon Ghouls On Scarlet Crusade
+                case 54522:
                 case 60936:                                 // Surge of Power (h) (Malygos)
                 case 61693:                                 // Arcane Storm (Malygos)
                 case 62477:                                 // Icicle (Hodir 25man)

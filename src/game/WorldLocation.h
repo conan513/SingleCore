@@ -22,10 +22,7 @@
 #include "Common.h"
 #include "SharedDefines.h"
 #include "ByteBuffer.h"
-#include "ObjectGuid.h"
 #include <G3D/Vector3.h>
-
-class MovementInfo;
 
 using G3D::Vector3;
 
@@ -49,8 +46,6 @@ struct MANGOS_DLL_SPEC Location : public Vector3
 
     virtual ~Location()
     {};
-
-    virtual bool HasMap() const { return false; };
 
     Location& operator = (Location const& loc);
     bool operator == (Location const& loc) const;
@@ -101,7 +96,7 @@ struct MANGOS_DLL_SPEC Position : public Location
     virtual void SetPhaseMask(uint32 newPhaseMask) { m_phaseMask = newPhaseMask; };
     uint32 GetPhaseMask() const { return m_phaseMask; }
 
-    virtual bool HasMap() const override { return false; };
+    virtual bool HasMap() const { return false; };
 
     Position& operator = (Position const& pos);
     bool operator == (Position const& pos) const;
@@ -116,17 +111,17 @@ struct MANGOS_DLL_SPEC WorldLocation : public Position
 
     public:
     WorldLocation()
-        : Position(), mapid(-1), instance(0), realmid(0), m_Tpos(Position()), m_Tguid(ObjectGuid())
+        : Position(), mapid(-1), instance(0), realmid(0), m_Tpos(Position())
     {}
 
-    explicit WorldLocation(uint32 _mapid, float _x, float _y, float _z, float _o = 0.0f, uint32 phaseMask = PHASEMASK_NORMAL, uint32 _instance = 0, uint32 _realmid = 0);
+    explicit WorldLocation(uint32 _mapid, float _x, float _y, float _z, float _o = 0, uint32 phaseMask = PHASEMASK_NORMAL, uint32 _instance = 0, uint32 _realmid = 0);
 
     explicit WorldLocation(uint32 _mapid, uint32 _instance, uint32 _realmid)
-        : Position(), mapid(_mapid), instance(_instance), realmid(_realmid), m_Tpos(Position()), m_Tguid(ObjectGuid())
+        : Position(), mapid(_mapid), instance(_instance), realmid(_realmid), m_Tpos(Position())
     {}
 
     WorldLocation(WorldLocation const &loc)
-        : Position(loc.x, loc.y, loc.z, loc.orientation, loc.GetPhaseMask()), mapid(loc.mapid), instance(loc.instance), realmid(loc.realmid), m_Tpos(loc.m_Tpos), m_Tguid(ObjectGuid())
+        : Position(loc.x, loc.y, loc.z, loc.orientation, loc.GetPhaseMask()), mapid(loc.mapid), instance(loc.instance), realmid(loc.realmid), m_Tpos(loc.m_Tpos)
     {}
 
     virtual ~WorldLocation() 
@@ -141,16 +136,13 @@ struct MANGOS_DLL_SPEC WorldLocation : public Position
         return mapid >= 0;
     }
 
-    // Returns and set current ACTIVE position!
-    Position const& value() { return GetPosition(); };
-    Position const& GetPosition() { return GetTransportGuid().IsEmpty() ? ((Position)*this) : GetTransportPos(); };
-    void SetPosition(Position const& pos);
+    Position const& GetPosition() { return *this; };
 
     uint32 GetZoneId() const;
     uint32 GetAreaId() const;
 
     uint32 GetRealmId()    const { return realmid; };
-    uint32 GetMapId()      const { return HasMap() ? uint32(mapid) :  UINT32_MAX; };
+    uint32 GetMapId()      const { return HasMap() ? abs(mapid) :  UINT32_MAX; };
     uint32 GetInstanceId() const { return HasMap() ? instance :  0; };
 
 
@@ -163,10 +155,8 @@ struct MANGOS_DLL_SPEC WorldLocation : public Position
     void SetOrientation(float value);
 
     WorldLocation& operator = (WorldLocation const& loc);
-    WorldLocation& operator = (Position const& pos);
 
-    void SetPosition(WorldLocation const& loc);
-    //void SetPosition(MovementInfo const& mi);
+    WorldLocation& operator = (Position const& pos);
 
     float GetDistance(WorldLocation const& loc) const;
 
@@ -181,14 +171,11 @@ struct MANGOS_DLL_SPEC WorldLocation : public Position
     public:
     Position const& GetTransportPos() const { return m_Tpos; };
     Position& GetTransportPosition() { return m_Tpos; };
-    void ClearTransportData() { m_Tguid = ObjectGuid(); m_Tpos = Position(); };
+    void ClearTransportData() { m_Tpos = Position(); };
     void SetTransportPosition(Position const& pos) { m_Tpos = pos; };
-    ObjectGuid const& GetTransportGuid() const { return m_Tguid; };
-    void SetTransportGuid(ObjectGuid const& guid) { m_Tguid = guid; };
 
     private:
-    Position    m_Tpos;
-    ObjectGuid  m_Tguid;
+    Position  m_Tpos;
 };
 
 ByteBuffer& operator << (ByteBuffer& buf, Location const& loc);

@@ -86,13 +86,13 @@ CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, 
 
 CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32 uiCastFlags, ObjectGuid uiOriginalCasterGUID)
 {
-    if (!pTarget)
-        return CAST_FAIL_OTHER;
-
     Unit* pCaster = m_creature;
 
     if (uiCastFlags & CAST_FORCE_TARGET_SELF)
         pCaster = pTarget;
+
+    if (!pTarget)
+        return CAST_FAIL_OTHER;
 
     // Allowed to cast only if not casting (unless we interrupt ourself) or if spell is triggered
     if (!pCaster->IsNonMeleeSpellCasted(false) || (uiCastFlags & (CAST_TRIGGERED | CAST_INTERRUPT_PREVIOUS)))
@@ -135,20 +135,17 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
 bool CreatureAI::AttackByType(WeaponAttackType attType)
 {
     // Make sure our attack is ready before checking distance
-    if (!m_creature->isAttackReady(attType))
-        return false;
+    if (m_creature->isAttackReady(attType) && m_creature->CanReachWithMeleeAttack(m_creature->getVictim()))
+    {
+        m_creature->AttackerStateUpdate(m_creature->getVictim(), attType);
+        m_creature->resetAttackTimer(attType);
+        WeaponAttackType attTypeTwo = (attType == BASE_ATTACK ? OFF_ATTACK : BASE_ATTACK);
+        if (m_creature->getAttackTimer(attTypeTwo) < 500)
+            m_creature->setAttackTimer(attTypeTwo, 500);
+        return true;
+    }
 
-    Unit* pVictim = m_creature->getVictim();
-    if (!pVictim || !m_creature->CanReachWithMeleeAttack(pVictim))
-        return false;
-
-    m_creature->AttackerStateUpdate(pVictim, attType);
-    m_creature->resetAttackTimer(attType);
-    WeaponAttackType attTypeTwo = (attType == BASE_ATTACK ? OFF_ATTACK : BASE_ATTACK);
-    if (m_creature->getAttackTimer(attTypeTwo) < 500)
-        m_creature->setAttackTimer(attTypeTwo, 500);
-
-    return true;
+    return false;
 }
 
 bool CreatureAI::DoMeleeAttackIfReady()
@@ -165,14 +162,11 @@ void CreatureAI::SetCombatMovement(bool enable, bool stopOrStartMovement /*=fals
     else
         m_creature->addUnitState(UNIT_STAT_NO_COMBAT_MOVEMENT);
 
-    if (!stopOrStartMovement)
-        return;
-
-    if (Unit* pVictim = m_creature->getVictim()) // Only change current movement while in combat
+    if (stopOrStartMovement && m_creature->getVictim())     // Only change current movement while in combat
     {
         if (enable)
-            m_creature->GetMotionMaster()->MoveChase(pVictim, m_attackDistance, m_attackAngle);
-        else if (m_creature->IsInUnitState(UNIT_ACTION_CHASE))
+            m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim(), m_attackDistance, m_attackAngle);
+        else if (!enable && m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
             m_creature->StopMoving();
     }
 }
@@ -181,9 +175,9 @@ void CreatureAI::HandleMovementOnAttackStart(Unit* victim)
 {
     if (m_isCombatMovement)
         m_creature->GetMotionMaster()->MoveChase(victim, m_attackDistance, m_attackAngle);
-    else if (m_creature->IsInUnitState(UNIT_ACTION_CHASE))
+    else if (m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
     {
-        m_creature->GetUnitStateMgr().DropAction(UNIT_ACTION_CHASE);
+        m_creature->GetMotionMaster()->MoveIdle();
         m_creature->StopMoving();
     }
 }

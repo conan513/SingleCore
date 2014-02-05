@@ -4867,7 +4867,7 @@ bool ChatHandler::HandleTeleAddCommand(char* args)
 
     std::string name = args;
 
-    if (sObjectMgr.GetGameTeleExactName(name))
+    if (sObjectMgr.GetGameTele(name))
     {
         SendSysMessage(LANG_COMMAND_TP_ALREADYEXIST);
         SetSentErrorMessage(true);
@@ -4875,8 +4875,8 @@ bool ChatHandler::HandleTeleAddCommand(char* args)
     }
 
     GameTele tele;
-    tele.loc  = player->GetPosition();
-    tele.name = name;
+    tele.loc         = player->GetPosition();
+    tele.name        = name;
 
     if (sObjectMgr.AddGameTele(tele))
     {
@@ -7481,9 +7481,9 @@ bool ChatHandler::HandleTransportCurrentCommand(char* args)
     if (!transport)
     {
         PSendSysMessage("Player not on same map with binded transport!");
-        uint32 currentMap = MOTransport::GetPossibleMapByEntry(guid.GetCounter(), true);
+        uint32 currentMap = Transport::GetPossibleMapByEntry(guid.GetCounter(), true);
         if (currentMap == UINT32_MAX || currentMap == player->GetMapId())
-            currentMap = MOTransport::GetPossibleMapByEntry(guid.GetCounter(), false);
+            currentMap = Transport::GetPossibleMapByEntry(guid.GetCounter(), false);
         if (currentMap != UINT32_MAX)
             map = sMapMgr.CreateMap(currentMap, player);
 
@@ -7519,15 +7519,15 @@ bool ChatHandler::HandleTransportCurrentCommand(char* args)
         transport->GetOrientation());
 
     PSendSysMessage("Player position: %f %f %f (offset %f %f %f) delta %f %f %f",
-                player->m_movementInfo.GetPosition().getX(),
-                player->m_movementInfo.GetPosition().getY(),
-                player->m_movementInfo.GetPosition().getZ(),
-                player->m_movementInfo.GetTransportPosition().getX(),
-                player->m_movementInfo.GetTransportPosition().getY(),
-                player->m_movementInfo.GetTransportPosition().getZ(),
-                player->m_movementInfo.GetPosition().getX() - transport->GetPositionX(),
-                player->m_movementInfo.GetPosition().getY() - transport->GetPositionY(),
-                player->m_movementInfo.GetPosition().getZ() - transport->GetPositionZ()
+                player->m_movementInfo.GetPos()->x,
+                player->m_movementInfo.GetPos()->y,
+                player->m_movementInfo.GetPos()->z,
+                player->m_movementInfo.GetTransportPos()->x,
+                player->m_movementInfo.GetTransportPos()->y,
+                player->m_movementInfo.GetTransportPos()->z,
+                player->m_movementInfo.GetPos()->x - transport->GetPositionX(),
+                player->m_movementInfo.GetPos()->y - transport->GetPositionY(),
+                player->m_movementInfo.GetPos()->z - transport->GetPositionZ()
                 );
 
     return true;
@@ -7549,7 +7549,7 @@ bool ChatHandler::HandleTransportPathCommand(char* args)
         return true;
     }
 
-    uint32 currentMap = MOTransport::GetPossibleMapByEntry(guid.GetCounter(), true);
+    uint32 currentMap = Transport::GetPossibleMapByEntry(guid.GetCounter(), true);
 
     Map* map = NULL;
     if (currentMap != UINT32_MAX)
@@ -7562,7 +7562,7 @@ bool ChatHandler::HandleTransportPathCommand(char* args)
 
     if (!transport)
     {
-        uint32 currentMap2 = MOTransport::GetPossibleMapByEntry(guid.GetCounter(), false);
+        uint32 currentMap2 = Transport::GetPossibleMapByEntry(guid.GetCounter(), false);
         if (currentMap2 != UINT32_MAX)
             map = sMapMgr.CreateMap(currentMap2, player);
 
@@ -7575,42 +7575,30 @@ bool ChatHandler::HandleTransportPathCommand(char* args)
             return true;
         }
     }
-    if (transport->IsMOTransport())
-    {
-        PSendSysMessage("Transport: %s on map %u (%s), %s, passengers "SIZEFMTD", current time %u (map %u xyz %f %f %f)",
+    PSendSysMessage("Transport: %s on map %u (%s), %s, passengers "SIZEFMTD", current time %u (map %u xyz %f %f %f)",
             transport->GetObjectGuid().GetString().c_str(), 
             map->GetId(),
-            ((MOTransport*)transport)->GetName(),
+            transport->GetName(),
             transport->isActiveObject() ? "active" : "passive",
             transport->GetTransportKit()->GetPassengers().size(),
-            ((MOTransport*)transport)->GetCurrent()->first,
-            ((MOTransport*)transport)->GetCurrent()->second.loc.GetMapId(),
-            ((MOTransport*)transport)->GetCurrent()->second.loc.getX(),
-            ((MOTransport*)transport)->GetCurrent()->second.loc.getY(),
-            ((MOTransport*)transport)->GetCurrent()->second.loc.getZ()
+            transport->GetCurrent()->first,
+            transport->GetCurrent()->second.loc.GetMapId(),
+            transport->GetCurrent()->second.loc.getX(),
+            transport->GetCurrent()->second.loc.getY(),
+            transport->GetCurrent()->second.loc.getZ()
         );
-        PSendSysMessage("Transport: %s on map %u (%s), %s, passengers "SIZEFMTD", next time %u (map %u xyz %f %f %f)",
+    PSendSysMessage("Transport: %s on map %u (%s), %s, passengers "SIZEFMTD", next time %u (map %u xyz %f %f %f)",
             transport->GetObjectGuid().GetString().c_str(), 
             map->GetId(),
-            ((MOTransport*)transport)->GetName(),
+            transport->GetName(),
             transport->isActiveObject() ? "active" : "passive",
             transport->GetTransportKit()->GetPassengers().size(),
-            ((MOTransport*)transport)->GetNext()->first,
-            ((MOTransport*)transport)->GetNext()->second.loc.GetMapId(),
-            ((MOTransport*)transport)->GetNext()->second.loc.getX(),
-            ((MOTransport*)transport)->GetNext()->second.loc.getY(),
-            ((MOTransport*)transport)->GetNext()->second.loc.getZ()
+            transport->GetNext()->first,
+            transport->GetNext()->second.loc.GetMapId(),
+            transport->GetNext()->second.loc.getX(),
+            transport->GetNext()->second.loc.getY(),
+            transport->GetNext()->second.loc.getZ()
         );
-    }
-    else
-    {
-        PSendSysMessage("Transport: %s on map %u, %s, passengers "SIZEFMTD"",
-            transport->GetObjectGuid().GetString().c_str(), 
-            map->GetId(),
-            transport->isActiveObject() ? "active" : "passive",
-            transport->GetTransportKit()->GetPassengers().size()
-        );
-    }
 
     return true;
 }
@@ -7627,7 +7615,7 @@ bool ChatHandler::HandleTransportCommand(char* args)
     Player* player = m_session->GetPlayer();
 
     ObjectGuid guid = ObjectGuid(HIGHGUID_MO_TRANSPORT, transportEntry);
-    uint32 currentMap = MOTransport::GetPossibleMapByEntry(guid.GetCounter(), true);
+    uint32 currentMap = Transport::GetPossibleMapByEntry(guid.GetCounter(), true);
 
     Map* map = NULL;
     if (currentMap != UINT32_MAX)
@@ -7640,7 +7628,7 @@ bool ChatHandler::HandleTransportCommand(char* args)
 
     if (!transport)
     {
-        uint32 currentMap2 = MOTransport::GetPossibleMapByEntry(guid.GetCounter(), false);
+        uint32 currentMap2 = Transport::GetPossibleMapByEntry(guid.GetCounter(), false);
         if (currentMap2 != UINT32_MAX)
             map = sMapMgr.CreateMap(currentMap2, player);
 
@@ -7680,7 +7668,7 @@ bool ChatHandler::HandleTransportGoCommand(char* args)
     Player* player = m_session->GetPlayer();
 
     ObjectGuid guid = ObjectGuid(HIGHGUID_MO_TRANSPORT, transportEntry);
-    uint32 currentMap = MOTransport::GetPossibleMapByEntry(guid.GetCounter(), true);
+    uint32 currentMap = Transport::GetPossibleMapByEntry(guid.GetCounter(), true);
 
     Map* map = NULL;
     if (currentMap != UINT32_MAX)
@@ -7693,7 +7681,7 @@ bool ChatHandler::HandleTransportGoCommand(char* args)
 
     if (!transport)
     {
-        uint32 currentMap2 = MOTransport::GetPossibleMapByEntry(guid.GetCounter(), false);
+        uint32 currentMap2 = Transport::GetPossibleMapByEntry(guid.GetCounter(), false);
         if (currentMap2 != UINT32_MAX)
             map = sMapMgr.CreateMap(currentMap2, player);
 
@@ -7725,7 +7713,7 @@ bool ChatHandler::HandleTransportStartCommand(char* args)
     Player* player = m_session->GetPlayer();
 
     ObjectGuid guid = ObjectGuid(HIGHGUID_MO_TRANSPORT, transportEntry);
-    uint32 currentMap = MOTransport::GetPossibleMapByEntry(guid.GetCounter(), true);
+    uint32 currentMap = Transport::GetPossibleMapByEntry(guid.GetCounter(), true);
 
     Map* map = NULL;
     if (currentMap != UINT32_MAX)
@@ -7738,7 +7726,7 @@ bool ChatHandler::HandleTransportStartCommand(char* args)
 
     if (!transport)
     {
-        uint32 currentMap2 = MOTransport::GetPossibleMapByEntry(guid.GetCounter(), false);
+        uint32 currentMap2 = Transport::GetPossibleMapByEntry(guid.GetCounter(), false);
         if (currentMap2 != UINT32_MAX)
             map = sMapMgr.CreateMap(currentMap2, player);
 
@@ -7767,7 +7755,7 @@ bool ChatHandler::HandleTransportStopCommand(char* args)
     Player* player = m_session->GetPlayer();
 
     ObjectGuid guid = ObjectGuid(HIGHGUID_MO_TRANSPORT, transportEntry);
-    uint32 currentMap = MOTransport::GetPossibleMapByEntry(guid.GetCounter(), true);
+    uint32 currentMap = Transport::GetPossibleMapByEntry(guid.GetCounter(), true);
 
     Map* map = NULL;
     if (currentMap != UINT32_MAX)
@@ -7780,7 +7768,7 @@ bool ChatHandler::HandleTransportStopCommand(char* args)
 
     if (!transport)
     {
-        uint32 currentMap2 = MOTransport::GetPossibleMapByEntry(guid.GetCounter(), false);
+        uint32 currentMap2 = Transport::GetPossibleMapByEntry(guid.GetCounter(), false);
         if (currentMap2 != UINT32_MAX)
             map = sMapMgr.CreateMap(currentMap2, player);
 
