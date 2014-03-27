@@ -42,9 +42,11 @@ namespace ai
             creators["lfg proposal"] = &WorldPacketTriggerContext::lfg_proposal;
             creators["lfg role check"] = &WorldPacketTriggerContext::lfg_role_check;
             creators["lfg leave"] = &WorldPacketTriggerContext::lfg_leave;
+            creators["guild invite"] = &WorldPacketTriggerContext::guild_invite;
         }
 
     private:
+        static Trigger* guild_invite(PlayerbotAI* ai) { return new WorldPacketTrigger(ai, "guild invite"); }
         static Trigger* lfg_leave(PlayerbotAI* ai) { return new WorldPacketTrigger(ai, "lfg leave"); }
         static Trigger* lfg_proposal(PlayerbotAI* ai) { return new WorldPacketTrigger(ai, "lfg proposal"); }
         static Trigger* lfg_role_check(PlayerbotAI* ai) { return new WorldPacketTrigger(ai, "lfg role check"); }

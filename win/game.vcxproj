@@ -378,6 +378,7 @@
     <ClCompile Include="..\src\game\AuctionHouseHandler.cpp" />
     <ClCompile Include="..\src\game\AuctionHouseMgr.cpp" />
     <ClCompile Include="..\src\game\Bag.cpp" />
+    <ClCompile Include="..\src\game\BattleField\BattleField.cpp" />
     <ClCompile Include="..\src\game\BattleGround\BattleGround.cpp" />
     <ClCompile Include="..\src\game\BattleGround\BattleGroundAA.cpp" />
     <ClCompile Include="..\src\game\BattleGround\BattleGroundAB.cpp" />
@@ -407,7 +408,6 @@
     <ClCompile Include="..\src\game\ChatLexicsCutter.cpp" />
     <ClCompile Include="..\src\game\ChatLog.cpp" />
     <ClCompile Include="..\src\game\CombatHandler.cpp" />
-    <ClCompile Include="..\src\game\ConfusedMovementGenerator.cpp" />
     <ClCompile Include="..\src\game\Corpse.cpp" />
     <ClCompile Include="..\src\game\Creature.cpp" />
     <ClCompile Include="..\src\game\CreatureAI.cpp" />
@@ -421,7 +421,6 @@
     <ClCompile Include="..\src\game\debugcmds.cpp" />
     <ClCompile Include="..\src\game\DuelHandler.cpp" />
     <ClCompile Include="..\src\game\DynamicObject.cpp" />
-    <ClCompile Include="..\src\game\FleeingMovementGenerator.cpp" />
     <ClCompile Include="..\src\game\FollowerReference.cpp" />
     <ClCompile Include="..\src\game\GameEventMgr.cpp" />
     <ClCompile Include="..\src\game\GameObject.cpp" />
@@ -437,9 +436,7 @@
     <ClCompile Include="..\src\game\Guild.cpp" />
     <ClCompile Include="..\src\game\GuildHandler.cpp" />
     <ClCompile Include="..\src\game\GuildMgr.cpp" />
-    <ClCompile Include="..\src\game\HomeMovementGenerator.cpp" />
     <ClCompile Include="..\src\game\HostileRefManager.cpp" />
-    <ClCompile Include="..\src\game\IdleMovementGenerator.cpp" />
     <ClCompile Include="..\src\game\InstanceData.cpp" />
     <ClCompile Include="..\src\game\Item.cpp" />
     <ClCompile Include="..\src\game\ItemEnchantmentMgr.cpp" />
@@ -463,7 +460,15 @@
     <ClCompile Include="..\src\game\MiscHandler.cpp" />
     <ClCompile Include="..\src\game\MotionMaster.cpp" />
     <ClCompile Include="..\src\game\MoveMap.cpp" />
-    <ClCompile Include="..\src\game\MovementGenerator.cpp" />
+    <ClCompile Include="..\src\game\movementGenerators\ConfusedMovementGenerator.cpp" />
+    <ClCompile Include="..\src\game\movementGenerators\FleeingMovementGenerator.cpp" />
+    <ClCompile Include="..\src\game\movementGenerators\HomeMovementGenerator.cpp" />
+    <ClCompile Include="..\src\game\movementGenerators\IdleMovementGenerator.cpp" />
+    <ClCompile Include="..\src\game\movementGenerators\MovementGenerator.cpp" />
+    <ClCompile Include="..\src\game\movementGenerators\PointMovementGenerator.cpp" />
+    <ClCompile Include="..\src\game\movementGenerators\RandomMovementGenerator.cpp" />
+    <ClCompile Include="..\src\game\movementGenerators\TargetedMovementGenerator.cpp" />
+    <ClCompile Include="..\src\game\movementGenerators\WaypointMovementGenerator.cpp" />
     <ClCompile Include="..\src\game\MovementHandler.cpp" />
     <ClCompile Include="..\src\game\movement\MoveSpline.cpp" />
     <ClCompile Include="..\src\game\movement\MoveSplineInit.cpp" />
@@ -487,7 +492,6 @@
     <ClCompile Include="..\src\game\OutdoorPvP\OutdoorPvPNA.cpp" />
     <ClCompile Include="..\src\game\OutdoorPvP\OutdoorPvPSI.cpp" />
     <ClCompile Include="..\src\game\OutdoorPvP\OutdoorPvPTF.cpp" />
-    <ClCompile Include="..\src\game\OutdoorPvP\OutdoorPvPWG.cpp" />
     <ClCompile Include="..\src\game\OutdoorPvP\OutdoorPvPZM.cpp" />
     <ClCompile Include="..\src\game\PathFinder.cpp" />
     <ClCompile Include="..\src\game\pchdef.cpp">
@@ -538,6 +542,7 @@
     <ClCompile Include="..\src\game\playerbot\strategy\actions\GenericActions.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\actions\GenericSpellActions.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\actions\GossipHelloAction.cpp" />
+    <ClCompile Include="..\src\game\playerbot\strategy\actions\GuildAcceptAction.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\actions\GuildBankAction.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\actions\HelpAction.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\actions\InventoryAction.cpp" />
@@ -611,8 +616,6 @@
     <ClCompile Include="..\src\game\playerbot\strategy\generic\DuelStrategy.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\generic\EmoteStrategy.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\generic\FleeStrategy.cpp" />
-    <ClCompile Include="..\src\game\playerbot\strategy\generic\FollowLineStrategy.cpp" />
-    <ClCompile Include="..\src\game\playerbot\strategy\generic\FollowMasterRandomStrategy.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\generic\FollowMasterStrategy.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\generic\GrindingStrategy.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\generic\GuardStrategy.cpp" />
@@ -626,9 +629,6 @@
     <ClCompile Include="..\src\game\playerbot\strategy\generic\RacialsStrategy.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\generic\RangedCombatStrategy.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\generic\RunawayStrategy.cpp" />
-    <ClCompile Include="..\src\game\playerbot\strategy\generic\StayCircleStrategy.cpp" />
-    <ClCompile Include="..\src\game\playerbot\strategy\generic\StayCombatStrategy.cpp" />
-    <ClCompile Include="..\src\game\playerbot\strategy\generic\StayLineStrategy.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\generic\StayStrategy.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\generic\TankAoeStrategy.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\generic\TankAssistStrategy.cpp" />
@@ -709,6 +709,8 @@
     <ClCompile Include="..\src\game\playerbot\strategy\values\DuelTargetValue.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\values\EnemyHealerTargetValue.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\values\EnemyPlayerValue.cpp" />
+    <ClCompile Include="..\src\game\playerbot\strategy\values\Formations.cpp" />
+    <ClCompile Include="..\src\game\playerbot\strategy\values\formations\Arrow.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\values\GrindTargetValue.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\values\InvalidTargetValue.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\values\ItemCountValue.cpp" />
@@ -750,12 +752,10 @@
     <ClCompile Include="..\src\game\playerbot\strategy\warrior\WarriorMultipliers.cpp" />
     <ClCompile Include="..\src\game\playerbot\strategy\warrior\WarriorTriggers.cpp" />
     <ClCompile Include="..\src\game\PlayerDump.cpp" />
-    <ClCompile Include="..\src\game\PointMovementGenerator.cpp" />
     <ClCompile Include="..\src\game\PoolManager.cpp" />
     <ClCompile Include="..\src\game\QueryHandler.cpp" />
     <ClCompile Include="..\src\game\QuestDef.cpp" />
     <ClCompile Include="..\src\game\QuestHandler.cpp" />
-    <ClCompile Include="..\src\game\RandomMovementGenerator.cpp" />
     <ClCompile Include="..\src\game\ReactorAI.cpp" />
     <ClCompile Include="..\src\game\ReputationMgr.cpp" />
     <ClCompile Include="..\src\game\ScriptMgr.cpp" />
@@ -769,7 +769,6 @@
     <ClCompile Include="..\src\game\SQLStorages.cpp" />
     <ClCompile Include="..\src\game\StateMgr.cpp" />
     <ClCompile Include="..\src\game\StatSystem.cpp" />
-    <ClCompile Include="..\src\game\TargetedMovementGenerator.cpp" />
     <ClCompile Include="..\src\game\TaxiHandler.cpp" />
     <ClCompile Include="..\src\game\TemporarySummon.cpp" />
     <ClCompile Include="..\src\game\ThreatManager.cpp" />
@@ -799,7 +798,6 @@
     <ClCompile Include="..\src\game\warden\WardenMac.cpp" />
     <ClCompile Include="..\src\game\warden\WardenWin.cpp" />
     <ClCompile Include="..\src\game\WaypointManager.cpp" />
-    <ClCompile Include="..\src\game\WaypointMovementGenerator.cpp" />
     <ClCompile Include="..\src\game\Weather.cpp" />
     <ClCompile Include="..\src\game\World.cpp" />
     <ClCompile Include="..\src\game\WorldLocation.cpp" />
@@ -825,6 +823,7 @@
     <ClInclude Include="..\src\game\AuctionHouseBot\AuctionHouseBot.h" />
     <ClInclude Include="..\src\game\AuctionHouseMgr.h" />
     <ClInclude Include="..\src\game\Bag.h" />
+    <ClInclude Include="..\src\game\BattleField\BattleField.h" />
     <ClInclude Include="..\src\game\BattleGround\BattleGround.h" />
     <ClInclude Include="..\src\game\BattleGround\BattleGroundAA.h" />
     <ClInclude Include="..\src\game\BattleGround\BattleGroundAB.h" />
@@ -850,7 +849,6 @@
     <ClInclude Include="..\src\game\Chat.h" />
     <ClInclude Include="..\src\game\ChatLexicsCutter.h" />
     <ClInclude Include="..\src\game\ChatLog.h" />
-    <ClInclude Include="..\src\game\ConfusedMovementGenerator.h" />
     <ClInclude Include="..\src\game\Corpse.h" />
     <ClInclude Include="..\src\game\Creature.h" />
     <ClInclude Include="..\src\game\CreatureAI.h" />
@@ -865,7 +863,6 @@
     <ClInclude Include="..\src\game\DBCStores.h" />
     <ClInclude Include="..\src\game\DBCStructure.h" />
     <ClInclude Include="..\src\game\DynamicObject.h" />
-    <ClInclude Include="..\src\game\FleeingMovementGenerator.h" />
     <ClInclude Include="..\src\game\FollowerReference.h" />
     <ClInclude Include="..\src\game\FollowerRefManager.h" />
     <ClInclude Include="..\src\game\Formulas.h" />
@@ -883,9 +880,7 @@
     <ClInclude Include="..\src\game\GuardAI.h" />
     <ClInclude Include="..\src\game\Guild.h" />
     <ClInclude Include="..\src\game\GuildMgr.h" />
-    <ClInclude Include="..\src\game\HomeMovementGenerator.h" />
     <ClInclude Include="..\src\game\HostileRefManager.h" />
-    <ClInclude Include="..\src\game\IdleMovementGenerator.h" />
     <ClInclude Include="..\src\game\InstanceData.h" />
     <ClInclude Include="..\src\game\Item.h" />
     <ClInclude Include="..\src\game\ItemEnchantmentMgr.h" />
@@ -905,8 +900,16 @@
     <ClInclude Include="..\src\game\MotionMaster.h" />
     <ClInclude Include="..\src\game\MoveMap.h" />
     <ClInclude Include="..\src\game\MoveMapSharedDefines.h" />
-    <ClInclude Include="..\src\game\MovementGenerator.h" />
-    <ClInclude Include="..\src\game\MovementGeneratorImpl.h" />
+    <ClInclude Include="..\src\game\movementGenerators\ConfusedMovementGenerator.h" />
+    <ClInclude Include="..\src\game\movementGenerators\FleeingMovementGenerator.h" />
+    <ClInclude Include="..\src\game\movementGenerators\HomeMovementGenerator.h" />
+    <ClInclude Include="..\src\game\movementGenerators\IdleMovementGenerator.h" />
+    <ClInclude Include="..\src\game\movementGenerators\MovementGenerator.h" />
+    <ClInclude Include="..\src\game\movementGenerators\MovementGeneratorImpl.h" />
+    <ClInclude Include="..\src\game\movementGenerators\PointMovementGenerator.h" />
+    <ClInclude Include="..\src\game\movementGenerators\RandomMovementGenerator.h" />
+    <ClInclude Include="..\src\game\movementGenerators\TargetedMovementGenerator.h" />
+    <ClInclude Include="..\src\game\movementGenerators\WaypointMovementGenerator.h" />
     <ClInclude Include="..\src\game\movement\MoveSpline.h" />
     <ClInclude Include="..\src\game\movement\MoveSplineFlag.h" />
     <ClInclude Include="..\src\game\movement\MoveSplineInit.h" />
@@ -933,7 +936,6 @@
     <ClInclude Include="..\src\game\OutdoorPvP\OutdoorPvPNA.h" />
     <ClInclude Include="..\src\game\OutdoorPvP\OutdoorPvPSI.h" />
     <ClInclude Include="..\src\game\OutdoorPvP\OutdoorPvPTF.h" />
-    <ClInclude Include="..\src\game\OutdoorPvP\OutdoorPvPWG.h" />
     <ClInclude Include="..\src\game\OutdoorPvP\OutdoorPvPZM.h" />
     <ClInclude Include="..\src\game\Path.h" />
     <ClInclude Include="..\src\game\PathFinder.h" />
@@ -998,6 +1000,7 @@
     <ClInclude Include="..\src\game\playerbot\strategy\actions\GenericActions.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\actions\GenericSpellActions.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\actions\GossipHelloAction.h" />
+    <ClInclude Include="..\src\game\playerbot\strategy\actions\GuildAcceptAction.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\actions\GuildBankAction.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\actions\HelpAction.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\actions\InventoryAction.h" />
@@ -1083,8 +1086,6 @@
     <ClInclude Include="..\src\game\playerbot\strategy\generic\DuelStrategy.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\generic\EmoteStrategy.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\generic\FleeStrategy.h" />
-    <ClInclude Include="..\src\game\playerbot\strategy\generic\FollowLineStrategy.h" />
-    <ClInclude Include="..\src\game\playerbot\strategy\generic\FollowMasterRandomStrategy.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\generic\FollowMasterStrategy.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\generic\GrindingStrategy.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\generic\GuardStrategy.h" />
@@ -1099,9 +1100,6 @@
     <ClInclude Include="..\src\game\playerbot\strategy\generic\RacialsStrategy.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\generic\RangedCombatStrategy.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\generic\RunawayStrategy.h" />
-    <ClInclude Include="..\src\game\playerbot\strategy\generic\StayCircleStrategy.h" />
-    <ClInclude Include="..\src\game\playerbot\strategy\generic\StayCombatStrategy.h" />
-    <ClInclude Include="..\src\game\playerbot\strategy\generic\StayLineStrategy.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\generic\StayStrategy.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\generic\TankAoeStrategy.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\generic\TankAssistStrategy.h" />
@@ -1203,6 +1201,8 @@
     <ClInclude Include="..\src\game\playerbot\strategy\values\DuelTargetValue.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\values\EnemyHealerTargetValue.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\values\EnemyPlayerValue.h" />
+    <ClInclude Include="..\src\game\playerbot\strategy\values\Formations.h" />
+    <ClInclude Include="..\src\game\playerbot\strategy\values\formations\Arrow.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\values\GrindTargetValue.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\values\HasAvailableLootValue.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\values\HasTotemValue.h" />
@@ -1261,10 +1261,8 @@
     <ClInclude Include="..\src\game\playerbot\strategy\warrior\WarriorMultipliers.h" />
     <ClInclude Include="..\src\game\playerbot\strategy\warrior\WarriorTriggers.h" />
     <ClInclude Include="..\src\game\PlayerDump.h" />
-    <ClInclude Include="..\src\game\PointMovementGenerator.h" />
     <ClInclude Include="..\src\game\PoolManager.h" />
     <ClInclude Include="..\src\game\QuestDef.h" />
-    <ClInclude Include="..\src\game\RandomMovementGenerator.h" />
     <ClInclude Include="..\src\game\ReactorAI.h" />
     <ClInclude Include="..\src\game\ReputationMgr.h" />
     <ClInclude Include="..\src\game\ScriptMgr.h" />
@@ -1278,7 +1276,6 @@
     <ClInclude Include="..\src\game\SQLStorages.h" />
     <ClInclude Include="..\src\game\StateMgr.h" />
     <ClInclude Include="..\src\game\StateMgrImpl.h" />
-    <ClInclude Include="..\src\game\TargetedMovementGenerator.h" />
     <ClInclude Include="..\src\game\TemporarySummon.h" />
     <ClInclude Include="..\src\game\ThreatManager.h" />
     <ClInclude Include="..\src\game\Totem.h" />
@@ -1313,7 +1310,6 @@
     <ClInclude Include="..\src\game\warden\WardenModuleWin.h" />
     <ClInclude Include="..\src\game\warden\WardenWin.h" />
     <ClInclude Include="..\src\game\WaypointManager.h" />
-    <ClInclude Include="..\src\game\WaypointMovementGenerator.h" />
     <ClInclude Include="..\src\game\Weather.h" />
     <ClInclude Include="..\src\game\World.h" />
     <ClInclude Include="..\src\game\WorldLocation.h" />

@@ -67,6 +67,7 @@ class ChatCommandTestCase : public MockedAiObjectContextTestCase
       CPPUNIT_TEST( save_mana );
       CPPUNIT_TEST( max_dps );
       CPPUNIT_TEST( tell_attackers );
+      CPPUNIT_TEST( formation );
   CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -439,6 +440,13 @@ protected:
         trigger("attackers");
         tick();
         assertActions(">S:tell attackers");
+    }
+
+    void formation()
+    {
+        trigger("formation");
+        tick();
+        assertActions(">S:formation");
     }
 
 };

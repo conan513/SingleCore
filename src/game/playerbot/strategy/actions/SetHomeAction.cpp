@@ -15,7 +15,9 @@ bool SetHomeAction::Execute(Event event)
     ObjectGuid selection = master->GetSelectionGuid();
     if (selection)
     {
-        Unit* unit = master->GetMap()->GetUnit(selection);
+        MapPtr map = bot->GetMapPtr();
+        Unit* unit = map->GetUnit(selection);
+        map = MapPtr();
         if (unit && unit->isInnkeeper())
         {
             float angle = GetFollowAngle();

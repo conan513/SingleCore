@@ -20,9 +20,7 @@ bool TradeStatusAction::Execute(Event event)
 
     if (trader != master)
     {
-        WorldPacket data(SMSG_MESSAGECHAT, 1024);
-        bot->BuildPlayerChat(&data, CHAT_MSG_WHISPER, "I'm kind of busy now", LANG_UNIVERSAL);
-        trader->GetSession()->SendPacket(&data);
+		bot->Whisper("I'm kind of busy now", LANG_UNIVERSAL, trader->GetObjectGuid());
     }
 
     if (trader != master || !ai->GetSecurity()->CheckLevelFor(PLAYERBOT_SECURITY_ALLOW_ALL, true, master))

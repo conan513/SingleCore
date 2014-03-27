@@ -11,12 +11,7 @@
 #include "generic/KiteStrategy.h"
 #include "generic/FleeStrategy.h"
 #include "generic/FollowMasterStrategy.h"
-#include "generic/FollowMasterRandomStrategy.h"
-#include "generic/FollowLineStrategy.h"
 #include "generic/RunawayStrategy.h"
-#include "generic/StayCircleStrategy.h"
-#include "generic/StayLineStrategy.h"
-#include "generic/StayCombatStrategy.h"
 #include "generic/StayStrategy.h"
 #include "generic/UseFoodStrategy.h"
 #include "generic/ConserveManaStrategy.h"
@@ -91,31 +86,19 @@ namespace ai
     public:
         MovementStrategyContext() : NamedObjectContext<Strategy>(false, true)
         {
-            creators["follow master"] = &MovementStrategyContext::follow_master;
-            creators["be near"] = &MovementStrategyContext::follow_master_random;
-            creators["follow line"] = &MovementStrategyContext::follow_line;
+            creators["follow"] = &MovementStrategyContext::follow_master;
             creators["stay"] = &MovementStrategyContext::stay;
             creators["runaway"] = &MovementStrategyContext::runaway;
             creators["flee from adds"] = &MovementStrategyContext::flee_from_adds;
-            creators["stay circle"] = &MovementStrategyContext::stay_circle;
-            creators["stay combat"] = &MovementStrategyContext::stay_combat;
-            creators["stay line"] = &MovementStrategyContext::stay_line;
             creators["guard"] = &MovementStrategyContext::guard;
-            creators["move random"] = &MovementStrategyContext::move_random;
         }
 
     private:
-        static Strategy* move_random(PlayerbotAI* ai) { return new MoveRandomStrategy(ai); }
         static Strategy* guard(PlayerbotAI* ai) { return new GuardStrategy(ai); }
-        static Strategy* follow_master_random(PlayerbotAI* ai) { return new FollowMasterRandomStrategy(ai); }
         static Strategy* follow_master(PlayerbotAI* ai) { return new FollowMasterStrategy(ai); }
-        static Strategy* follow_line(PlayerbotAI* ai) { return new FollowLineStrategy(ai); }
         static Strategy* stay(PlayerbotAI* ai) { return new StayStrategy(ai); }
         static Strategy* runaway(PlayerbotAI* ai) { return new RunawayStrategy(ai); }
         static Strategy* flee_from_adds(PlayerbotAI* ai) { return new FleeFromAddsStrategy(ai); }
-        static Strategy* stay_circle(PlayerbotAI* ai) { return new StayCircleStrategy(ai); }
-        static Strategy* stay_combat(PlayerbotAI* ai) { return new StayCombatStrategy(ai); }
-        static Strategy* stay_line(PlayerbotAI* ai) { return new StayLineStrategy(ai); }
     };
 
     class AssistStrategyContext : public NamedObjectContext<Strategy>

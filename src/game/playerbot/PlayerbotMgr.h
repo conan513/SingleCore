@@ -31,7 +31,7 @@ public:
     void OnBotLogin(Player * const bot);
 
     list<string> HandlePlayerbotCommand(char* args, Player* master = NULL);
-    bool ProcessBotCommand(string cmd, ObjectGuid guid, bool admin, uint32 masterAccountId);
+    bool ProcessBotCommand(string cmd, ObjectGuid guid, bool admin, uint32 masterAccountId, uint32 masterGuildId);
     uint32 GetAccountId(string name);
 
 protected:
@@ -53,7 +53,6 @@ public:
 
     virtual void UpdateAIInternal(uint32 elapsed);
 
-    void RandomizePlayerBot(uint64 guid, uint32 level, uint32 itemQuality);
     Player* GetMaster() const { return master; };
 
     void SaveToDB();

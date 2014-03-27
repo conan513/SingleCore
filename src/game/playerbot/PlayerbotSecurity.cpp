@@ -12,7 +12,7 @@ PlayerbotSecurity::PlayerbotSecurity(Player* const bot) : bot(bot)
         account = sObjectMgr.GetPlayerAccountIdByGUID(bot->GetObjectGuid());
 }
 
-PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* reason)
+PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* reason, bool ignoreGroup)
 {
     if (from->GetSession()->GetSecurity() >= SEC_GAMEMASTER)
         return PLAYERBOT_SECURITY_ALLOW_ALL;
@@ -31,27 +31,20 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
 
     if (sPlayerbotAIConfig.IsInRandomAccountList(account))
     {
-        Player* master = bot->GetPlayerbotAI()->GetMaster();
-        if (master)
+        if (bot->GetPlayerbotAI()->IsOpposing(from))
         {
-            if (bot->GetPlayerbotAI()->IsOpposing(master))
-            {
-                if (reason) *reason = PLAYERBOT_DENY_OPPOSING;
-                return PLAYERBOT_SECURITY_DENY_ALL;
-            }
+            if (reason) *reason = PLAYERBOT_DENY_OPPOSING;
+            return PLAYERBOT_SECURITY_DENY_ALL;
+        }
 
-            Group* group = master->GetGroup();
-            if (group)
+        Group* group = from->GetGroup();
+        if (group)
+        {
+            for (GroupReference *gref = group->GetFirstMember(); gref; gref = gref->next())
             {
-                for (GroupReference *gref = group->GetFirstMember(); gref; gref = gref->next())
-                {
-                    Player* player = gref->getSource();
-                    if(player == master)
-                        continue;
-
-                    if (player == bot)
-                        return PLAYERBOT_SECURITY_ALLOW_ALL;
-                }
+                Player* player = gref->getSource();
+                if (player == bot && !ignoreGroup)
+                    return PLAYERBOT_SECURITY_ALLOW_ALL;
             }
         }
 
@@ -63,8 +56,11 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
 
         if (bot->GetMapId() != from->GetMapId() || bot->GetDistance(from) > sPlayerbotAIConfig.whisperDistance)
         {
-            if (reason) *reason = PLAYERBOT_DENY_FAR;
-            return PLAYERBOT_SECURITY_TALK;
+            if (!bot->GetGuildId() || bot->GetGuildId() != from->GetGuildId())
+            {
+                if (reason) *reason = PLAYERBOT_DENY_FAR;
+                return PLAYERBOT_SECURITY_TALK;
+            }
         }
 
         int botGS = (int)bot->GetEquipGearScore(false, false);
@@ -81,11 +77,18 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
             return PLAYERBOT_SECURITY_TALK;
         }
 
-        Group* group = bot->GetGroup();
+        group = bot->GetGroup();
         if (!group)
         {
             if (reason) *reason = PLAYERBOT_DENY_INVITE;
             return PLAYERBOT_SECURITY_INVITE;
+        }
+
+        for (GroupReference *gref = group->GetFirstMember(); gref; gref = gref->next())
+        {
+            Player* player = gref->getSource();
+            if (player == from)
+                return PLAYERBOT_SECURITY_ALLOW_ALL;
         }
 
         if (group->IsFull())
@@ -101,10 +104,10 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
     return PLAYERBOT_SECURITY_ALLOW_ALL;
 }
 
-bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent, Player* from)
+bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent, Player* from, bool ignoreGroup)
 {
     DenyReason reason = PLAYERBOT_DENY_NONE;
-    PlayerbotSecurityLevel realLevel = LevelFor(from, &reason);
+    PlayerbotSecurityLevel realLevel = LevelFor(from, &reason, ignoreGroup);
     if (realLevel >= level)
         return true;
 
@@ -128,7 +131,7 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
             out << "I'll do it later";
             break;
         case PLAYERBOT_DENY_LOW_LEVEL:
-            out << "You are too low level";
+            out << "You are too low level: |cffff0000" << from->getLevel() << "|cffffffff/|cff00ff00" << bot->getLevel();
             break;
         case PLAYERBOT_DENY_GEARSCORE:
             {
@@ -153,7 +156,22 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
             out << "Invite me to your group first";
             break;
         case PLAYERBOT_DENY_FAR:
-            out << "I am too far away";
+            {
+                out << "I am too far away";
+
+                uint32 area = bot->GetAreaId();
+                if (area)
+                {
+                    const AreaTableEntry* entry = sAreaStore.LookupEntry(area);
+                    if (entry)
+                    {
+                        out << " |cffffffff(|cffff0000" << entry->area_name[0] << "|cffffffff)";
+                    }
+                }
+            }
+            break;
+        case PLAYERBOT_DENY_FULL_GROUP:
+            out << "I am in a full group. Will do it later";
             break;
         default:
             out << "I can't do that";
@@ -165,9 +183,6 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
         break;
     }
 
-    WorldPacket data(SMSG_MESSAGECHAT, 1024);
-    bot->BuildPlayerChat(&data, CHAT_MSG_WHISPER, out.str().c_str(), LANG_UNIVERSAL);
-    from->GetSession()->SendPacket(&data);
-
+	bot->Whisper(out.str(), LANG_UNIVERSAL, from->GetObjectGuid());
     return false;
 }

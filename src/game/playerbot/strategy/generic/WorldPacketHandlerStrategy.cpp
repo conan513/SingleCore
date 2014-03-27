@@ -90,6 +90,10 @@ void WorldPacketHandlerStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     triggers.push_back(new TriggerNode(
         "often",
         NextAction::array(0, new NextAction("security check", relevance), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "guild invite",
+        NextAction::array(0, new NextAction("guild accept", relevance), NULL)));
 }
 
 WorldPacketHandlerStrategy::WorldPacketHandlerStrategy(PlayerbotAI* ai) : PassTroughStrategy(ai)

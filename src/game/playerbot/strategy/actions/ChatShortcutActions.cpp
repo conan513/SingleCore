@@ -12,8 +12,8 @@ bool FollowChatShortcutAction::Execute(Event event)
         return false;
 
     ai->Reset();
-    ai->ChangeStrategy("+follow master,-passive", BOT_STATE_NON_COMBAT);
-    ai->ChangeStrategy("-follow master,-passive", BOT_STATE_COMBAT);
+    ai->ChangeStrategy("+follow,-passive", BOT_STATE_NON_COMBAT);
+    ai->ChangeStrategy("-follow,-passive", BOT_STATE_COMBAT);
     if (bot->GetMapId() != master->GetMapId() || bot->GetDistance(master) > sPlayerbotAIConfig.sightDistance)
     {
         ai->TellMaster("I will not follow you - too far away");
@@ -31,7 +31,7 @@ bool StayChatShortcutAction::Execute(Event event)
 
     ai->Reset();
     ai->ChangeStrategy("+stay,-passive", BOT_STATE_NON_COMBAT);
-    ai->ChangeStrategy("-follow master,-passive", BOT_STATE_COMBAT);
+    ai->ChangeStrategy("-follow,-passive", BOT_STATE_COMBAT);
     ai->TellMaster("Staying");
     return true;
 }
@@ -43,8 +43,8 @@ bool FleeChatShortcutAction::Execute(Event event)
         return false;
 
     ai->Reset();
-    ai->ChangeStrategy("+follow master,+passive", BOT_STATE_NON_COMBAT);
-    ai->ChangeStrategy("+follow master,+passive", BOT_STATE_COMBAT);
+    ai->ChangeStrategy("+follow,+passive", BOT_STATE_NON_COMBAT);
+    ai->ChangeStrategy("+follow,+passive", BOT_STATE_COMBAT);
     if (bot->GetMapId() != master->GetMapId() || bot->GetDistance(master) > sPlayerbotAIConfig.sightDistance)
     {
         ai->TellMaster("I will not flee with you - too far away");

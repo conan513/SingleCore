@@ -198,10 +198,10 @@ Engine* AiFactory::createNonCombatEngine(Player* player, PlayerbotAI* const faca
 
 void AiFactory::AddDefaultDeadStrategies(Player* player, PlayerbotAI* const facade, Engine* deadEngine)
 {
-    deadEngine->addStrategies("dead", "stay", "chat", "default", "follow master", NULL);
+    deadEngine->addStrategies("dead", "stay", "chat", "default", "follow", NULL);
     if (sRandomPlayerbotMgr.IsRandomBot(player) && !player->GetGroup())
     {
-        deadEngine->removeStrategy("follow master");
+        deadEngine->removeStrategy("follow");
     }
 }
 

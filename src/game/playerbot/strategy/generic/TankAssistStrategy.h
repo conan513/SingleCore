@@ -8,7 +8,7 @@ namespace ai
     public:
         TankAssistStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName() { return "tank assist"; }
-        virtual StrategyType GetType() { return STRATEGY_TYPE_TANK; }
+        virtual int GetType() { return STRATEGY_TYPE_TANK; }
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);

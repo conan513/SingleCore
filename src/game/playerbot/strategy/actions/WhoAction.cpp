@@ -46,9 +46,7 @@ bool WhoAction::Execute(Event event)
         return false;
 
     // ignore random bot chat filter
-    WorldPacket data(SMSG_MESSAGECHAT, 1024);
-    bot->BuildPlayerChat(&data, CHAT_MSG_WHISPER, tell, LANG_UNIVERSAL);
-    owner->GetSession()->SendPacket(&data);
+	bot->Whisper(tell, LANG_UNIVERSAL, owner->GetObjectGuid());
     return true;
 }
 

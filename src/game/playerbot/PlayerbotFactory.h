@@ -16,9 +16,13 @@ public:
         bot(bot), level(level), itemQuality(itemQuality), InventoryAction(bot->GetPlayerbotAI(), "factory") {}
 
     static ObjectGuid GetRandomBot();
-    void Randomize(bool incremental);
+    void CleanRandomize();
+    void Randomize();
+    void Refresh();
 
 private:
+    void Randomize(bool incremental);
+    void Prepare();
     void InitSecondEquipmentSet();
     void InitEquipment(bool incremental);
     bool CanEquipItem(ItemPrototype const* proto, uint32 desiredQuality);

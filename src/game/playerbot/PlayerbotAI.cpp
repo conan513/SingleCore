@@ -87,6 +87,7 @@ PlayerbotAI::PlayerbotAI(Player* bot) :
     masterIncomingPacketHandlers.AddHandler(CMSG_MOVE_SPLINE_DONE, "taxi done");
     masterIncomingPacketHandlers.AddHandler(CMSG_GROUP_UNINVITE_GUID, "uninvite");
     masterIncomingPacketHandlers.AddHandler(CMSG_PUSHQUESTTOPARTY, "quest share");
+    masterIncomingPacketHandlers.AddHandler(CMSG_GUILD_INVITE, "guild invite");
 
     botOutgoingPacketHandlers.AddHandler(SMSG_GROUP_INVITE, "group invite");
     botOutgoingPacketHandlers.AddHandler(BUY_ERR_NOT_ENOUGHT_MONEY, "not enough money");
@@ -183,7 +184,10 @@ void PlayerbotAI::HandleTeleportAck()
 		bot->GetSession()->HandleMoveTeleportAckOpcode(p);
 	}
 	else if (bot->IsBeingTeleportedFar())
+	{
 		bot->GetSession()->HandleMoveWorldportAckOpcode();
+		SetNextCheckDelay(1000);
+	}
 }
 
 void PlayerbotAI::Reset()
@@ -406,11 +410,8 @@ void PlayerbotAI::ChangeEngine(BotState type)
 
 void PlayerbotAI::DoNextAction()
 {
-    if (bot->IsBeingTeleported() || (GetMaster() && GetMaster()->IsBeingTeleported()))
+    if (bot->IsBeingTeleported() || bot->IsBeingTeleportedDelayEvent() || (GetMaster() && GetMaster()->IsBeingTeleported()))
         return;
-
-    bot->UpdateUnderwaterState(bot->GetMap(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
-    bot->CheckAreaExploreAndOutdoor();
 
     currentEngine->DoNextAction(NULL);
 
@@ -535,6 +536,25 @@ void PlayerbotAI::ResetStrategies()
     AiFactory::AddDefaultCombatStrategies(bot, this, engines[BOT_STATE_COMBAT]);
     AiFactory::AddDefaultNonCombatStrategies(bot, this, engines[BOT_STATE_NON_COMBAT]);
     AiFactory::AddDefaultDeadStrategies(bot, this, engines[BOT_STATE_DEAD]);
+}
+
+bool PlayerbotAI::IsRanged(Player* player)
+{
+    PlayerbotAI* botAi = player->GetPlayerbotAI();
+    if (botAi)
+        return botAi->ContainsStrategy(STRATEGY_TYPE_RANGED);
+
+    switch (player->getClass())
+    {
+    case CLASS_DEATH_KNIGHT:
+    case CLASS_PALADIN:
+    case CLASS_WARRIOR:
+    case CLASS_ROGUE:
+        return false;
+    case CLASS_DRUID:
+        return !HasAnyAuraOf(player, "cat form", "bear form", "dire bear form", NULL);
+    }
+    return true;
 }
 
 bool PlayerbotAI::IsTank(Player* player)
@@ -686,9 +706,7 @@ bool PlayerbotAI::TellMasterNoFacing(string text, PlayerbotSecurityLevel securit
             (bot->GetMapId() != master->GetMapId() || bot->GetDistance(master) > sPlayerbotAIConfig.whisperDistance))
         return false;
 
-    WorldPacket data(SMSG_MESSAGECHAT, 1024);
-    bot->BuildPlayerChat(&data, *aiObjectContext->GetValue<ChatMsg>("chat"), text, LANG_UNIVERSAL);
-    master->GetSession()->SendPacket(&data);
+    bot->Whisper(text, LANG_UNIVERSAL, master->GetObjectGuid());
     return true;
 }
 

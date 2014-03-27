@@ -13,6 +13,6 @@ namespace ai
         virtual NextAction** getDefaultActions();
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName() { return "holy"; }
-        virtual StrategyType GetType() { return STRATEGY_TYPE_DPS; }
+        virtual int GetType() { return STRATEGY_TYPE_DPS|STRATEGY_TYPE_RANGED; }
     };
 }

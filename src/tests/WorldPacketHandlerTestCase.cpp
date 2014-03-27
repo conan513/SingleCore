@@ -35,6 +35,7 @@ class WorldPacketHandlerTestCase : public MockedAiObjectContextTestCase
       CPPUNIT_TEST( lfg );
       CPPUNIT_TEST( lfg_leave );
       CPPUNIT_TEST( security_check );
+      CPPUNIT_TEST( guild_accept );
   CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -251,6 +252,14 @@ protected:
         tick();
 
         assertActions(">S:security check");
+    }
+
+    void guild_accept()
+    {
+        trigger("guild invite");
+        tick();
+
+        assertActions(">S:guild accept");
     }
 
 };

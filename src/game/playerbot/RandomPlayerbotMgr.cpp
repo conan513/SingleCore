@@ -203,7 +203,7 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
 
 void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs)
 {
-    if (bot->IsBeingTeleported())
+    if (bot->IsBeingTeleported() || bot->IsBeingTeleportedDelayEvent())
         return;
 
     if (locs.empty())
@@ -220,11 +220,11 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
         float y = loc.getY() + urand(0, sPlayerbotAIConfig.grindDistance) - sPlayerbotAIConfig.grindDistance / 2;
         float z = loc.getZ();
 
-        Map* map = sMapMgr.FindMap(loc.GetMapId());
+        MapPtr map = sMapMgr.GetMapPtr(loc.GetMapId(), 0);
         if (!map)
             continue;
 
-        const TerrainInfo * terrain = map->GetTerrain();
+        const TerrainInfoPtr terrain = map->GetTerrain();
         if (!terrain)
             continue;
 
@@ -240,6 +240,9 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
 
         sLog.outDetail("Random teleporting bot %s to %s %f,%f,%f", bot->GetName(), area->area_name[0], x, y, z);
         z = 0.05f + map->GetTerrain()->GetHeightStatic(x, y, 0.05f + z, true, MAX_HEIGHT);
+        map = MapPtr();
+
+        bot->GetMotionMaster()->Clear();
         bot->TeleportTo(loc.GetMapId(), x, y, z, 0);
         return;
     }
@@ -310,7 +313,10 @@ void RandomPlayerbotMgr::IncreaseLevel(Player* bot)
     uint32 maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
     uint32 level = min(bot->getLevel() + 1, maxLevel);
     PlayerbotFactory factory(bot, level);
-    factory.Randomize(true);
+    if (bot->GetGuildId())
+        factory.Refresh();
+    else
+        factory.Randomize();
     RandomTeleportForLevel(bot);
 }
 
@@ -350,7 +356,7 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
             continue;
 
         PlayerbotFactory factory(bot, level);
-        factory.Randomize(false);
+        factory.CleanRandomize();
         RandomTeleport(bot, tele->loc.GetMapId(), tele->loc.getX(), tele->loc.getY(), tele->loc.getZ());
         break;
     }

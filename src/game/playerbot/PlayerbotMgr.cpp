@@ -59,7 +59,7 @@ void PlayerbotHolder::LogoutPlayerBot(uint64 guid)
     if (bot)
     {
         bot->GetPlayerbotAI()->TellMaster("Goodbye!");
-        bot->SaveToDB();
+        //bot->SaveToDB();
 
         WorldSession * botWorldSessionPtr = bot->GetSession();
         playerBots.erase(guid);    // deletes bot player ptr inside this WorldSession PlayerBotMap
@@ -120,15 +120,24 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
     ai->TellMaster("Hello!");
 }
 
-bool PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admin, uint32 masterAccountId)
+bool PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admin, uint32 masterAccountId, uint32 masterGuildId)
 {
     if (!sPlayerbotAIConfig.enabled || guid.IsEmpty())
         return false;
 
+    uint32 botAccount = sObjectMgr.GetPlayerAccountIdByGUID(guid);
     bool isRandomBot = sRandomPlayerbotMgr.IsRandomBot(guid);
-    bool isRandomAccount = sPlayerbotAIConfig.IsInRandomAccountList(sObjectMgr.GetPlayerAccountIdByGUID(guid));
+    bool isRandomAccount = sPlayerbotAIConfig.IsInRandomAccountList(botAccount);
+    bool isMasterAccount = (masterAccountId == botAccount);
 
     if (isRandomAccount && !isRandomBot && !admin)
+    {
+        Player* bot = sObjectMgr.GetPlayer(guid, false);
+        if (bot->GetGuildId() != masterGuildId)
+            return false;
+    }
+
+    if (!isRandomAccount && !isMasterAccount && !admin)
         return false;
 
     if (cmd == "add" || cmd == "login")
@@ -160,25 +169,25 @@ bool PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admin,
             if (cmd == "init=white" || cmd == "init=common")
             {
                 PlayerbotFactory factory(bot, master->getLevel(), ITEM_QUALITY_NORMAL);
-                factory.Randomize(false);
+                factory.CleanRandomize();
                 return true;
             }
             else if (cmd == "init=green" || cmd == "init=uncommon")
             {
                 PlayerbotFactory factory(bot, master->getLevel(), ITEM_QUALITY_UNCOMMON);
-                factory.Randomize(false);
+                factory.CleanRandomize();
                 return true;
             }
             else if (cmd == "init=blue" || cmd == "init=rare")
             {
                 PlayerbotFactory factory(bot, master->getLevel(), ITEM_QUALITY_RARE);
-                factory.Randomize(false);
+                factory.CleanRandomize();
                 return true;
             }
             else if (cmd == "init=epic" || cmd == "init=purple")
             {
                 PlayerbotFactory factory(bot, master->getLevel(), ITEM_QUALITY_EPIC);
-                factory.Randomize(false);
+                factory.CleanRandomize();
                 return true;
             }
         }
@@ -186,7 +195,7 @@ bool PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admin,
         if (cmd == "update")
         {
             PlayerbotFactory factory(bot, bot->getLevel());
-            factory.Randomize(true);
+            factory.Refresh();
             return true;
         }
         else if (cmd == "random")
@@ -329,11 +338,14 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char* args, Player* master)
         bool result = false;
         if (master && member != master->GetObjectGuid())
         {
-            result = ProcessBotCommand(cmdStr, member, master->GetSession()->GetSecurity() >= SEC_GAMEMASTER, master->GetSession()->GetAccountId());
+            result = ProcessBotCommand(cmdStr, member,
+                    master->GetSession()->GetSecurity() >= SEC_GAMEMASTER,
+                    master->GetSession()->GetAccountId(),
+                    master->GetGuildId());
         }
         else if (!master)
         {
-            result = ProcessBotCommand(cmdStr, member, true, -1);
+            result = ProcessBotCommand(cmdStr, member, true, -1, -1);
         }
 
         out << (result ? "ok" : "not allowed");
@@ -432,16 +444,6 @@ void PlayerbotMgr::HandleMasterOutgoingPacket(const WorldPacket& packet)
         if (bot->GetPlayerbotAI()->GetMaster() == GetMaster())
             bot->GetPlayerbotAI()->HandleMasterOutgoingPacket(packet);
     }
-}
-
-void PlayerbotMgr::RandomizePlayerBot(uint64 guid, uint32 level, uint32 itemQuality)
-{
-    Player* bot = GetPlayerBot(guid);
-    if (!bot)
-        return;
-
-    PlayerbotFactory factory(bot, level, itemQuality);
-    factory.Randomize(false);
 }
 
 void PlayerbotMgr::SaveToDB()

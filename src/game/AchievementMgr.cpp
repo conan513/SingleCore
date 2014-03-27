@@ -46,8 +46,10 @@
 #include "Map.h"
 #include "InstanceData.h"
 #include "DBCStructure.h"
+#include "Chat.h"
 
 #include "Policies/Singleton.h"
+
 
 INSTANTIATE_SINGLETON_1(AchievementGlobalMgr);
 
@@ -62,15 +64,8 @@ namespace MaNGOS
             {
                 char const* text = sObjectMgr.GetMangosString(i_textId, loc_idx);
 
-                data << uint8(i_msgtype);
-                data << uint32(LANG_UNIVERSAL);
-                data << i_player.GetObjectGuid();
-                data << uint32(5);
-                data << i_player.GetObjectGuid();
-                data << uint32(strlen(text) + 1);
-                data << text;
-                data << uint8(0);
-                data << uint32(i_achievementId);
+                ChatHandler::BuildChatPacket(data, i_msgtype, text, LANG_UNIVERSAL, i_player.GetChatTag(),  i_player.GetObjectGuid(), NULL, i_player.GetObjectGuid(), NULL, NULL,
+                    i_achievementId);
             }
 
         private:
@@ -95,6 +90,7 @@ bool AchievementCriteriaRequirement::IsValid(AchievementCriteriaEntry const* cri
         case ACHIEVEMENT_CRITERIA_TYPE_WIN_ARENA:
         case ACHIEVEMENT_CRITERIA_TYPE_WIN_RATED_ARENA:
         case ACHIEVEMENT_CRITERIA_TYPE_USE_ITEM:
+        case ACHIEVEMENT_CRITERIA_TYPE_COMPLETE_DAILY_QUEST:// only children's week event
         case ACHIEVEMENT_CRITERIA_TYPE_EQUIP_EPIC_ITEM:
         case ACHIEVEMENT_CRITERIA_TYPE_DO_EMOTE:
         case ACHIEVEMENT_CRITERIA_TYPE_BE_SPELL_TARGET2:

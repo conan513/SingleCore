@@ -8,7 +8,7 @@ namespace ai
     public:
         GrindingStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName() { return "grind"; }
-        virtual StrategyType GetType() { return STRATEGY_TYPE_DPS; }
+        virtual int GetType() { return STRATEGY_TYPE_DPS; }
         NextAction** getDefaultActions();
 
     public:

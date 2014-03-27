@@ -13,7 +13,9 @@ namespace ai
 		STRATEGY_TYPE_NONCOMBAT = 2,
 		STRATEGY_TYPE_TANK = 4,
 		STRATEGY_TYPE_DPS = 8,
-		STRATEGY_TYPE_HEAL = 16
+		STRATEGY_TYPE_HEAL = 16,
+		STRATEGY_TYPE_RANGED = 32,
+		STRATEGY_TYPE_MELEE = 64
 	};
 
 	enum ActionPriority
@@ -41,7 +43,7 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers) {}
         virtual void InitMultipliers(std::list<Multiplier*> &multipliers) {}
         virtual string getName() = 0;
-		virtual StrategyType GetType() { return STRATEGY_TYPE_GENERIC; }
+		virtual int GetType() { return STRATEGY_TYPE_GENERIC; }
         virtual ActionNode* GetAction(string name);
         void Update() {}
         void Reset() {}

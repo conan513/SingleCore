@@ -58,8 +58,6 @@ ChatLexicsCutter.h
 ChatLog.cpp
 ChatLog.h
 CombatHandler.cpp
-ConfusedMovementGenerator.cpp
-ConfusedMovementGenerator.h
 Corpse.cpp
 Corpse.h
 CreatureAI.cpp
@@ -87,8 +85,6 @@ debugcmds.cpp
 DuelHandler.cpp
 DynamicObject.cpp
 DynamicObject.h
-FleeingMovementGenerator.cpp
-FleeingMovementGenerator.h
 FollowerReference.cpp
 FollowerReference.h
 FollowerRefManager.h
@@ -121,12 +117,8 @@ Guild.h
 GuildHandler.cpp
 GuildMgr.cpp
 GuildMgr.h
-HomeMovementGenerator.cpp
-HomeMovementGenerator.h
 HostileRefManager.cpp
 HostileRefManager.h
-IdleMovementGenerator.cpp
-IdleMovementGenerator.h
 InstanceData.cpp
 InstanceData.h
 Item.cpp
@@ -169,9 +161,6 @@ MotionMaster.h
 MoveMap.cpp
 MoveMap.h
 MoveMapSharedDefines.h
-MovementGenerator.cpp
-MovementGenerator.h
-MovementGeneratorImpl.h
 MovementHandler.cpp
 NPCHandler.cpp
 NPCHandler.h
@@ -207,16 +196,12 @@ Player.cpp
 PlayerDump.cpp
 PlayerDump.h
 Player.h
-PointMovementGenerator.cpp
-PointMovementGenerator.h
 PoolManager.cpp
 PoolManager.h
 QueryHandler.cpp
 QuestDef.cpp
 QuestDef.h
 QuestHandler.cpp
-RandomMovementGenerator.cpp
-RandomMovementGenerator.h
 ReactorAI.cpp
 ReactorAI.h
 ReputationMgr.cpp
@@ -243,8 +228,6 @@ StateMgr.cpp
 StateMgr.h
 StateMgrImpl.h
 StatSystem.cpp
-TargetedMovementGenerator.cpp
-TargetedMovementGenerator.h
 TaxiHandler.cpp
 TemporarySummon.cpp
 TemporarySummon.h
@@ -275,8 +258,6 @@ VehicleHandler.cpp
 VoiceChatHandler.cpp
 WaypointManager.cpp
 WaypointManager.h
-WaypointMovementGenerator.cpp
-WaypointMovementGenerator.h
 Weather.cpp
 Weather.h
 World.cpp
@@ -296,6 +277,9 @@ WorldStateMgr.h
 
 AuctionHouseBot/AuctionHouseBot.cpp
 AuctionHouseBot/AuctionHouseBot.h
+
+BattleField/BattleField.cpp
+BattleField/BattleField.h
 
 BattleGround/BattleGroundAA.cpp
 BattleGround/BattleGroundAA.h
@@ -345,8 +329,6 @@ OutdoorPvP/OutdoorPvPSI.cpp
 OutdoorPvP/OutdoorPvPSI.h
 OutdoorPvP/OutdoorPvPTF.cpp
 OutdoorPvP/OutdoorPvPTF.h
-OutdoorPvP/OutdoorPvPWG.cpp
-OutdoorPvP/OutdoorPvPWG.h
 OutdoorPvP/OutdoorPvPZM.cpp
 OutdoorPvP/OutdoorPvPZM.h
 
@@ -363,6 +345,26 @@ movement/spline.h
 movement/spline.impl.h
 movement/typedefs.h
 movement/util.cpp
+
+movementGenerators/ConfusedMovementGenerator.cpp
+movementGenerators/ConfusedMovementGenerator.h
+movementGenerators/FleeingMovementGenerator.cpp
+movementGenerators/FleeingMovementGenerator.h
+movementGenerators/HomeMovementGenerator.cpp
+movementGenerators/HomeMovementGenerator.h
+movementGenerators/IdleMovementGenerator.cpp
+movementGenerators/IdleMovementGenerator.h
+movementGenerators/MovementGenerator.cpp
+movementGenerators/MovementGenerator.h
+movementGenerators/MovementGeneratorImpl.h
+movementGenerators/PointMovementGenerator.cpp
+movementGenerators/PointMovementGenerator.h
+movementGenerators/RandomMovementGenerator.cpp
+movementGenerators/RandomMovementGenerator.h
+movementGenerators/TargetedMovementGenerator.cpp
+movementGenerators/TargetedMovementGenerator.h
+movementGenerators/WaypointMovementGenerator.cpp
+movementGenerators/WaypointMovementGenerator.h
 
 vmap/BIH.cpp
 vmap/BIH.h
@@ -604,6 +606,8 @@ playerbot/strategy/actions/SaveManaAction.h
 playerbot/strategy/actions/SaveManaAction.cpp
 playerbot/strategy/actions/SecurityCheckAction.h
 playerbot/strategy/actions/SecurityCheckAction.cpp
+playerbot/strategy/actions/GuildAcceptAction.h
+playerbot/strategy/actions/GuildAcceptAction.cpp
 playerbot/strategy/druid/BearTankDruidStrategy.cpp
 playerbot/strategy/druid/BearTankDruidStrategy.h
 playerbot/strategy/druid/CasterDruidStrategy.cpp
@@ -655,10 +659,6 @@ playerbot/strategy/generic/EmoteStrategy.cpp
 playerbot/strategy/generic/EmoteStrategy.h
 playerbot/strategy/generic/FleeStrategy.cpp
 playerbot/strategy/generic/FleeStrategy.h
-playerbot/strategy/generic/FollowLineStrategy.cpp
-playerbot/strategy/generic/FollowLineStrategy.h
-playerbot/strategy/generic/FollowMasterRandomStrategy.cpp
-playerbot/strategy/generic/FollowMasterRandomStrategy.h
 playerbot/strategy/generic/FollowMasterStrategy.cpp
 playerbot/strategy/generic/FollowMasterStrategy.h
 playerbot/strategy/generic/GrindingStrategy.cpp
@@ -686,12 +686,6 @@ playerbot/strategy/generic/RangedCombatStrategy.cpp
 playerbot/strategy/generic/RangedCombatStrategy.h
 playerbot/strategy/generic/RunawayStrategy.cpp
 playerbot/strategy/generic/RunawayStrategy.h
-playerbot/strategy/generic/StayCircleStrategy.cpp
-playerbot/strategy/generic/StayCircleStrategy.h
-playerbot/strategy/generic/StayCombatStrategy.cpp
-playerbot/strategy/generic/StayCombatStrategy.h
-playerbot/strategy/generic/StayLineStrategy.cpp
-playerbot/strategy/generic/StayLineStrategy.h
 playerbot/strategy/generic/StayStrategy.cpp
 playerbot/strategy/generic/StayStrategy.h
 playerbot/strategy/generic/TankAoeStrategy.cpp
@@ -925,6 +919,10 @@ playerbot/strategy/values/ManaSaveLevelValue.h
 playerbot/strategy/values/LfgValues.h
 playerbot/strategy/values/EnemyHealerTargetValue.cpp
 playerbot/strategy/values/EnemyHealerTargetValue.h
+playerbot/strategy/values/Formations.cpp
+playerbot/strategy/values/Formations.h
+playerbot/strategy/values/formations/Arrow.cpp
+playerbot/strategy/values/formations/Arrow.h
 playerbot/strategy/warlock/DpsWarlockStrategy.cpp
 playerbot/strategy/warlock/DpsWarlockStrategy.h
 playerbot/strategy/warlock/GenericWarlockNonCombatStrategy.cpp
@@ -983,6 +981,7 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/warden
   ${CMAKE_CURRENT_SOURCE_DIR}/OutdoorPvP
   ${CMAKE_CURRENT_SOURCE_DIR}/BattleGround
+  ${CMAKE_CURRENT_SOURCE_DIR}/movementGenerators
   ${CMAKE_SOURCE_DIR}/dep/include/g3dlite
   ${CMAKE_SOURCE_DIR}/dep/recastnavigation/Detour
   ${CMAKE_SOURCE_DIR}/dep/recastnavigation/

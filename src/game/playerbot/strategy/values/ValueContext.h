@@ -53,6 +53,7 @@
 #include "ManaSaveLevelValue.h"
 #include "LfgValues.h"
 #include "EnemyHealerTargetValue.h"
+#include "Formations.h"
 
 namespace ai
 {
@@ -137,9 +138,11 @@ namespace ai
             creators["lfg proposal"] = &ValueContext::lfg_proposal;
             creators["bag space"] = &ValueContext::bag_space;
             creators["enemy healer target"] = &ValueContext::enemy_healer_target;
+            creators["formation"] = &ValueContext::formation;
         }
 
     private:
+        static UntypedValue* formation(PlayerbotAI* ai) { return new FormationValue(ai); }
         static UntypedValue* mana_save_level(PlayerbotAI* ai) { return new ManaSaveLevelValue(ai); }
         static UntypedValue* invalid_target(PlayerbotAI* ai) { return new InvalidTargetValue(ai); }
         static UntypedValue* balance(PlayerbotAI* ai) { return new BalancePercentValue(ai); }

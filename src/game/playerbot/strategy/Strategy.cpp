@@ -44,7 +44,7 @@ private:
     {
         return new ActionNode ("be near",
             /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("follow master"), NULL),
+            /*A*/ NextAction::array(0, new NextAction("follow"), NULL),
             /*C*/ NULL);
     }
     static ActionNode* attack_anything(PlayerbotAI* ai)

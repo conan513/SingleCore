@@ -9,9 +9,7 @@ using namespace ai;
 class NonCombatEngineTestCase : public EngineTestBase
 {
   CPPUNIT_TEST_SUITE( NonCombatEngineTestCase );
-      CPPUNIT_TEST( followMasterRandom );
       CPPUNIT_TEST( followMaster );
-      CPPUNIT_TEST( followLine );
       CPPUNIT_TEST( stay );
       CPPUNIT_TEST( eatDrink );
       CPPUNIT_TEST( dpsAssist );
@@ -50,30 +48,12 @@ protected:
 
     void followMaster()
     {
-        engine->addStrategy("follow master");
+        engine->addStrategy("follow");
 
         set<float>("distance", "master target", 20);
 		tickWithAttackerCount(0);
-		assertActions(">S:follow master");
+		assertActions(">S:follow");
     }
-
-    void followMasterRandom()
-    {
-        engine->addStrategy("be near");
-
-        set<float>("distance", "master target", 20);
-        tick();
-
-        assertActions(">S:be near");
-    }
-
-	void followLine()
-	{
-		engine->addStrategy("follow line");
-
-		tickWithAttackerCount(0);
-		assertActions(">S:follow line");
-	}
 
     void stay()
     {
@@ -175,7 +155,7 @@ protected:
 
     void loot_failed()
     {
-		engine->addStrategy("follow master");
+		engine->addStrategy("follow");
 		engine->addStrategy("loot");
 
 		tickWithLootAvailable();
@@ -235,7 +215,7 @@ protected:
 
     void movementStrategies()
     {
-        engine->addStrategy("follow master");
+        engine->addStrategy("follow");
         engine->addStrategy("follow line");
         engine->addStrategy("be near");
         engine->addStrategy("runaway");
@@ -259,7 +239,7 @@ protected:
 
     void out_of_react()
     {
-        engine->addStrategy("follow master");
+        engine->addStrategy("follow");
         set<float>("distance", "master target", 100.0f / 2 + 10);
         tick();
         assertActions(">S:tell out of react range");

@@ -125,6 +125,7 @@ public:
     void Reset();
     bool IsTank(Player* player);
     bool IsHeal(Player* player);
+    bool IsRanged(Player* player);
     Creature* GetCreature(ObjectGuid guid);
     Unit* GetUnit(ObjectGuid guid);
     GameObject* GetGameObject(ObjectGuid guid);

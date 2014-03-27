@@ -252,7 +252,5 @@ void SuggestWhatToDoAction::spam(string msg)
             (bot->GetMapId() != player->GetMapId() || bot->GetDistance(player) > sPlayerbotAIConfig.whisperDistance))
         return;
 
-    WorldPacket data(SMSG_MESSAGECHAT, 1024);
-    bot->BuildPlayerChat(&data, *ai->GetAiObjectContext()->GetValue<ChatMsg>("chat"), msg, LANG_UNIVERSAL);
-    player->GetSession()->SendPacket(&data);
+    bot->Whisper(msg, LANG_UNIVERSAL, player->GetObjectGuid());
 }
